@@ -10,9 +10,9 @@ from fastapi import Depends, HTTPException, status, Query
 from fastapi.security import APIKeyHeader
 from sqlalchemy.orm import Session
 
-from backend.app.database import get_db
-from backend.app.models import User
-from backend.app.services.moderation import refresh_moderation_status
+from app.database import get_db
+from app.models import User
+from app.services.moderation import refresh_moderation_status
 
 # Load secret key from environment
 JWT_SECRET = os.getenv("JWT_SECRET", "super_secret_for_gaming_platform_toxicity_detection")
