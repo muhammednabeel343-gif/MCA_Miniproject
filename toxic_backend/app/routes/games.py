@@ -3,10 +3,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from backend.app.database import get_db
-from backend.app.models import Game, GameRoom, GameRoomPlayer, User
-from backend.app.services.auth import require_active_user, require_game_access
-from backend.app.routes.chat_ws import manager as ws_manager
+from app.database import get_db
+from app.models import Game, GameRoom, GameRoomPlayer, User
+from app.services.auth import require_active_user, require_game_access
+from app.routes.chat_ws import manager as ws_manager
 import asyncio
 
 router = APIRouter(tags=["rooms"])

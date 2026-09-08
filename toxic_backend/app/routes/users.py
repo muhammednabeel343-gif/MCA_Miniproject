@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from backend.app.database import get_db
-from backend.app.models import User, ChatMessage, GameRoomPlayer, GameSession
-from backend.app.services.auth import require_active_user
+from app.database import get_db
+from app.models import User, ChatMessage, GameRoomPlayer, GameSession
+from app.services.auth import require_active_user
 
 router = APIRouter(prefix="/users", tags=["users"])
 

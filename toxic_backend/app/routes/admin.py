@@ -4,10 +4,10 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case
 
-from backend.app.database import get_db
-from backend.app.models import User, ChatMessage, GameRoom, Game, ModerationAction
-from backend.app.services.auth import require_admin
-from backend.app.services.moderation import refresh_moderation_status
+from app.database import get_db
+from app.models import User, ChatMessage, GameRoom, Game, ModerationAction
+from app.services.auth import require_admin
+from app.services.moderation import refresh_moderation_status
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 

@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from backend.app.services.model_service import predict_message
-from backend.app.database import get_db
-from backend.app.models import ChatMessage as ChatMessageDB
+from app.services.model_service import predict_message
+from app.database import get_db
+from app.models import ChatMessage as ChatMessageDB
 
 
 router = APIRouter()

@@ -5,11 +5,11 @@ from typing import Dict, List
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from backend.app.database import SessionLocal, get_db
-from backend.app.models import User, ChatMessage as ChatMessageDB, GameRoom, ModerationAction, GameRoomPlayer
-from backend.app.services.auth import decode_access_token, require_active_user
-from backend.app.services.moderation import refresh_moderation_status
-from backend.app.services.model_service import predict_message
+from app.database import SessionLocal, get_db
+from app.models import User, ChatMessage as ChatMessageDB, GameRoom, ModerationAction, GameRoomPlayer
+from app.services.auth import decode_access_token, require_active_user
+from app.services.moderation import refresh_moderation_status
+from app.services.model_service import predict_message
 
 logger = logging.getLogger("chat_ws")
 router = APIRouter(tags=["chat"])
