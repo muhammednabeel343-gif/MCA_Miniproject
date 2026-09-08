@@ -61,6 +61,8 @@ manager = ConnectionManager()
 # -----------------------------
 @router.websocket("/ws/chat/{room_id}")
 async def websocket_chat_endpoint(room_id: int, websocket: WebSocket, token: str = Query(None)):
+    print(f"WEBSOCKET HIT: room_id={room_id}, token_present={bool(token)}")
+
     db = SessionLocal()
     user = None
 

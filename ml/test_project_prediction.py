@@ -10,7 +10,7 @@ sys.path.append(
     )
 )
 
-from backend.app.services.model_service import predict_message
+from toxic_backend.app.services.model_service import predict_message
 
 
 # =====================================================
