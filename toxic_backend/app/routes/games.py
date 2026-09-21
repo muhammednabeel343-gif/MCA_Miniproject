@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Game, GameRoom, GameRoomPlayer, User
+from app.models import Game, GameRoom, GameRoomPlayer, GameRoomState, User
 from app.services.auth import require_active_user, require_game_access
 from app.routes.chat_ws import manager as ws_manager
 import asyncio
@@ -16,6 +16,30 @@ class RoomCreate(BaseModel):
     game_id: int
     room_name: str
     max_players: int
+
+
+class GameStateUpdate(BaseModel):
+    state: dict
+    version: int = 0
+
+
+def get_room_player(room_id: int, user_id: int, db: Session):
+    return db.query(GameRoomPlayer).filter(
+        GameRoomPlayer.room_id == room_id,
+        GameRoomPlayer.user_id == user_id,
+        GameRoomPlayer.left_at == None,
+    ).first()
+
+
+def require_room_player(room_id: int, current_user: User, db: Session):
+    room = db.query(GameRoom).filter(GameRoom.id == room_id).first()
+    if not room:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
+    if room.room_status == "FINISHED":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This game room is finished")
+    if not get_room_player(room_id, current_user.id, db):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not a player in this room")
+    return room
 
 
 @router.get("/games")
@@ -159,6 +183,58 @@ def get_room(room_id: int, db: Session = Depends(get_db)):
         "created_by": room.creator.username if room.creator else None,
         "created_at": room.created_at,
         "players": players_list
+    }
+
+
+@router.get("/rooms/{room_id}/game-state")
+def get_game_state(
+    room_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_game_access),
+):
+    require_room_player(room_id, current_user, db)
+    game_state = db.query(GameRoomState).filter(GameRoomState.room_id == room_id).first()
+    return {
+        "room_id": room_id,
+        "state": game_state.state if game_state else None,
+        "version": game_state.version if game_state else 0,
+        "updated_at": game_state.updated_at if game_state else None,
+        "updated_by": game_state.updated_by if game_state else None,
+    }
+
+
+@router.post("/rooms/{room_id}/game-state")
+def update_game_state(
+    room_id: int,
+    data: GameStateUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_game_access),
+):
+    require_room_player(room_id, current_user, db)
+    game_state = db.query(GameRoomState).filter(GameRoomState.room_id == room_id).with_for_update().first()
+    current_version = game_state.version if game_state else 0
+    if data.version != current_version:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"message": "Game state is out of date", "version": current_version},
+        )
+
+    if game_state is None:
+        game_state = GameRoomState(room_id=room_id, state=data.state, version=1, updated_by=current_user.id)
+        db.add(game_state)
+    else:
+        game_state.state = data.state
+        game_state.version = current_version + 1
+        game_state.updated_by = current_user.id
+
+    db.commit()
+    db.refresh(game_state)
+    return {
+        "room_id": room_id,
+        "state": game_state.state,
+        "version": game_state.version,
+        "updated_at": game_state.updated_at,
+        "updated_by": game_state.updated_by,
     }
 
 

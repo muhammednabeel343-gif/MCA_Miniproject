@@ -12,6 +12,7 @@ from fastapi import (
     Query,
     status,
 )
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.database import SessionLocal, get_db
@@ -30,6 +31,38 @@ from app.services.model_service import predict_message
 logger = logging.getLogger("chat_ws")
 
 router = APIRouter(tags=["chat"])
+
+
+class RoomChatMessage(BaseModel):
+    message: str
+
+
+def require_chat_room_access(room_id: int, user: User, db: Session):
+    room = db.query(GameRoom).filter(GameRoom.id == room_id).first()
+    if not room:
+        raise HTTPException(status_code=404, detail="Room not found")
+    player = db.query(GameRoomPlayer).filter(
+        GameRoomPlayer.room_id == room_id,
+        GameRoomPlayer.user_id == user.id,
+        GameRoomPlayer.left_at == None,
+    ).first()
+    if not player:
+        raise HTTPException(status_code=403, detail="You are not a player in this room")
+    return room
+
+
+def serialize_chat_message(chat_record):
+    return {
+        "type": "chat",
+        "id": chat_record.id,
+        "user_id": chat_record.user_id,
+        "username": chat_record.user.username if chat_record.user else "Deleted User",
+        "message": chat_record.message,
+        "status": chat_record.status,
+        "prediction": chat_record.prediction,
+        "confidence": chat_record.confidence,
+        "timestamp": chat_record.created_at.isoformat(),
+    }
 
 
 # ============================================================
@@ -98,6 +131,58 @@ class ConnectionManager:
 
 
 manager = ConnectionManager()
+
+
+@router.post("/rooms/{room_id}/chat")
+def send_room_chat_message(
+    room_id: int,
+    data: RoomChatMessage,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_active_user),
+):
+    room = require_chat_room_access(room_id, current_user, db)
+    refresh_moderation_status(current_user, db)
+    message_text = data.message.strip()
+    if not message_text:
+        raise HTTPException(status_code=400, detail="Message cannot be empty")
+    if current_user.account_status == "BLOCKED":
+        raise HTTPException(status_code=403, detail="Blocked users cannot send chat messages")
+    prediction_result = predict_message(message_text)
+    chat_record = ChatMessageDB(
+        user_id=current_user.id,
+        game_id=room.game_id,
+        room_id=room_id,
+        message=message_text,
+        prediction=prediction_result["prediction"],
+        status=prediction_result["status"],
+        confidence=prediction_result["confidence"],
+        selected_model=prediction_result["selected_model"],
+        logistic_regression_prediction=prediction_result["logistic_regression_prediction"],
+        logistic_regression_confidence=prediction_result["logistic_regression_confidence"],
+        svm_prediction=prediction_result["svm_prediction"],
+        svm_confidence=prediction_result["svm_confidence"],
+    )
+    db.add(chat_record)
+    db.commit()
+    db.refresh(chat_record)
+
+    warning_triggered = False
+    restriction_triggered = False
+    if prediction_result["status"] == "Toxic":
+        current_user.warning_count += 1
+        db.add(ModerationAction(
+            user_id=current_user.id,
+            action_type="WARNING",
+            reason=f"Toxic message: '{message_text}'",
+        ))
+        warning_triggered = True
+        db.add(current_user)
+        db.commit()
+
+    result = serialize_chat_message(chat_record)
+    result["warning_triggered"] = warning_triggered
+    result["restriction_triggered"] = restriction_triggered
+    return result
 
 
 # ============================================================
@@ -332,52 +417,11 @@ async def websocket_chat_endpoint(
 
                 continue
 
-            msg_type = message_data.get("type", "chat")
-
             # =================================================
             # REFRESH MODERATION STATUS
             # =================================================
 
             refresh_moderation_status(user, db)
-
-            # =================================================
-            # GAME MOVE
-            # =================================================
-
-            if msg_type == "game_move":
-
-                if user.account_status == "BLOCKED":
-
-                    await websocket.send_json(
-                        {
-                            "type": "system",
-                            "message": (
-                                "Blocked users cannot make "
-                                "game moves."
-                            ),
-                            "status": "BLOCKED",
-                            "username": "System",
-                            "timestamp": datetime.now(
-                                timezone.utc
-                            ).isoformat(),
-                        }
-                    )
-
-                    continue
-
-                await manager.broadcast_to_room(
-                    room_id,
-                    {
-                        "type": "game_move",
-                        "sender": user.username,
-                        "state": message_data.get("state"),
-                        "timestamp": datetime.now(
-                            timezone.utc
-                        ).isoformat(),
-                    }
-                )
-
-                continue
 
             # =================================================
             # CHAT
@@ -405,29 +449,6 @@ async def websocket_chat_endpoint(
                             "chat messages."
                         ),
                         "status": "BLOCKED",
-                        "username": "System",
-                        "timestamp": datetime.now(
-                            timezone.utc
-                        ).isoformat(),
-                    }
-                )
-
-                continue
-
-            # =================================================
-            # RESTRICTED USER
-            # =================================================
-
-            if user.account_status == "RESTRICTED":
-
-                await websocket.send_json(
-                    {
-                        "type": "system",
-                        "message": (
-                            "You are currently restricted "
-                            "from sending chat messages."
-                        ),
-                        "status": "RESTRICTED",
                         "username": "System",
                         "timestamp": datetime.now(
                             timezone.utc
@@ -507,71 +528,16 @@ async def websocket_chat_endpoint(
                 db.add(user)
                 db.commit()
 
-                # =============================================
-                # FIRST VIOLATION -> WARNING
-                # =============================================
-
-                if user.warning_count == 1:
-
-                    mod_action = ModerationAction(
-                        user_id=user.id,
-                        action_type="WARNING",
-                        reason=(
-                            f"Toxic message: "
-                            f"'{message_text}'"
-                        ),
-                    )
-
-                    db.add(mod_action)
-                    db.commit()
-
-                    warning_triggered = True
-
-                    logger.info(
-                        f"Warning issued to "
-                        f"user={user.username}"
-                    )
-
-                # =============================================
-                # REPEATED VIOLATION -> RESTRICT
-                # =============================================
-
-                else:
-
-                    user.account_status = "RESTRICTED"
-
-                    db.add(user)
-
-                    now = datetime.now(
-                        timezone.utc
-                    )
-
-                    restrict_end = (
-                        now + timedelta(minutes=5)
-                    )
-
-                    mod_action = ModerationAction(
-                        user_id=user.id,
-                        action_type="RESTRICT",
-                        reason=(
-                            f"Repeated toxicity: "
-                            f"'{message_text}'"
-                        ),
-                        restriction_start=now,
-                        restriction_end=restrict_end,
-                    )
-
-                    db.add(mod_action)
-                    db.commit()
-
-                    restriction_triggered = True
-
-                    logger.info(
-                        f"User restricted: "
-                        f"user={user.username}, "
-                        f"until={restrict_end}"
-                    )
-
+                mod_action = ModerationAction(
+                    user_id=user.id,
+                    action_type="WARNING",
+                    reason=f"Toxic message: '{message_text}'",
+                )
+                db.add(mod_action)
+                db.add(user)
+                db.commit()
+                warning_triggered = True
+                logger.info(f"Warning issued to user={user.username}")
             # =================================================
             # BROADCAST CHAT MESSAGE
             # =================================================
@@ -668,6 +634,23 @@ async def websocket_chat_endpoint(
             f"room={room_id}, "
             f"user={user.username if user else 'unknown'}"
         )
+
+
+# ============================================================
+# HTTP Chat Polling API Routes
+# ============================================================
+
+@router.get("/rooms/{room_id}/chat")
+def get_room_chat_messages(
+    room_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_active_user),
+):
+    require_chat_room_access(room_id, current_user, db)
+    chats = db.query(ChatMessageDB).filter(
+        ChatMessageDB.room_id == room_id,
+    ).order_by(ChatMessageDB.created_at.asc()).all()
+    return [serialize_chat_message(chat) for chat in chats]
 
 
 # ============================================================

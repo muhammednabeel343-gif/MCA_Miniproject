@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -63,6 +63,7 @@ class GameRoom(Base):
     players = relationship("GameRoomPlayer", back_populates="room", cascade="all, delete-orphan")
     messages = relationship("ChatMessage", back_populates="room", cascade="all, delete-orphan")
     sessions = relationship("GameSession", back_populates="room", cascade="all, delete-orphan")
+    game_state = relationship("GameRoomState", back_populates="room", uselist=False, cascade="all, delete-orphan")
 
 
 class GameRoomPlayer(Base):
@@ -78,6 +79,19 @@ class GameRoomPlayer(Base):
     # Relationships
     room = relationship("GameRoom", back_populates="players")
     user = relationship("User", back_populates="room_participations")
+
+
+class GameRoomState(Base):
+    __tablename__ = "game_room_states"
+
+    room_id = Column(Integer, ForeignKey("game_rooms.id", ondelete="CASCADE"), primary_key=True)
+    state = Column(JSON, nullable=True)
+    version = Column(Integer, nullable=False, default=0)
+    updated_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    room = relationship("GameRoom", back_populates="game_state")
+    updater = relationship("User")
 
 
 class ChatMessage(Base):
