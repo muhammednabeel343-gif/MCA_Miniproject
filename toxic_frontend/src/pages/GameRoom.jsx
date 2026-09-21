@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { API_BASE_URL, WS_BASE_URL } from "../config";
+import { API_BASE_URL } from "../config";
 import { authHeaders, getToken, getUser } from "../utils/auth";
 import { Chess } from "chess.js";
 
@@ -14,10 +14,15 @@ export default function GameRoom() {
   const [messages, setMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
   const [error, setError] = useState(null);
-  const [restriction, setRestriction] = useState(null);
   const [warningMsg, setWarningMsg] = useState(null);
   const [gameState, setGameState] = useState(null);
-  const [socketStatus, setSocketStatus] = useState("connecting");
+  const gameStateVersionRef = useRef(0);
+  const pollingTimerRef = useRef(null);
+  const roomPollingTimerRef = useRef(null);
+  const moveInFlightRef = useRef(false);
+  const chatPollingTimerRef = useRef(null);
+  const chatMessageIdsRef = useRef(new Set());
+  const [chatStatus, setChatStatus] = useState("connecting");
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const roomShellRef = useRef(null);
@@ -25,7 +30,6 @@ export default function GameRoom() {
 const socketRef = useRef(null);
 const messagesAreaRef = useRef(null);
 const warningTimerRef = useRef(null);
-const restrictionTimerRef = useRef(null);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 1024);
@@ -44,7 +48,11 @@ const restrictionTimerRef = useRef(null);
     const initializeRoom = async () => {
       await fetchRoomData(isActive);
       if (!isActive) return;
-      connectWebSocket(isActive);
+      roomPollingTimerRef.current = setInterval(() => fetchRoomData(isActive), 1000);
+      pollGameState(isActive);
+      pollingTimerRef.current = setInterval(() => pollGameState(isActive), 750);
+      pollChat(isActive);
+      chatPollingTimerRef.current = setInterval(() => pollChat(isActive), 750);
     };
 
     initializeRoom();
@@ -56,27 +64,17 @@ const restrictionTimerRef = useRef(null);
         clearTimeout(warningTimerRef.current);
         warningTimerRef.current = null;
       }
-      if (restrictionTimerRef.current) {
-  clearTimeout(restrictionTimerRef.current);
-  restrictionTimerRef.current = null;
-}
-      const ws = socketRef.current;
-      if (ws) {
-        ws.onopen = null;
-        ws.onmessage = null;
-        ws.onerror = null;
-        ws.onclose = null;
-
-        if (
-          ws.readyState === WebSocket.OPEN ||
-          ws.readyState === WebSocket.CONNECTING
-        ) {
-          ws.close();
-        }
-
-        if (socketRef.current === ws) {
-          socketRef.current = null;
-        }
+      if (pollingTimerRef.current) {
+        clearInterval(pollingTimerRef.current);
+        pollingTimerRef.current = null;
+      }
+      if (roomPollingTimerRef.current) {
+        clearInterval(roomPollingTimerRef.current);
+        roomPollingTimerRef.current = null;
+      }
+      if (chatPollingTimerRef.current) {
+        clearInterval(chatPollingTimerRef.current);
+        chatPollingTimerRef.current = null;
       }
     };
   }, [roomId, token, navigate]);
@@ -105,171 +103,44 @@ const restrictionTimerRef = useRef(null);
     }
   };
 
-  const startRestrictionTimer = (message) => {
-  setRestriction(message);
-
-  // Remove an old timer if one already exists
-  if (restrictionTimerRef.current) {
-    clearTimeout(restrictionTimerRef.current);
-  }
-
-  // Automatically unlock after 5 minutes
-  restrictionTimerRef.current = setTimeout(() => {
-    setRestriction(null);
-
-    setWarningMsg(
-      "Restriction expired. You can send messages again."
-    );
-
-    restrictionTimerRef.current = null;
-  }, 5 * 60 * 1000);
-};
-
-  const connectWebSocket = (isActive = true) => {
-    if (!token) {
-      if (isActive) {
-        setError("Authentication token is missing.");
-        setSocketStatus("disconnected");
-      }
-      return;
-    }
-
-
-    const previousSocket = socketRef.current;
-    if (previousSocket) {
-      previousSocket.onopen = null;
-      previousSocket.onmessage = null;
-      previousSocket.onerror = null;
-      previousSocket.onclose = null;
-
-      if (
-        previousSocket.readyState === WebSocket.OPEN ||
-        previousSocket.readyState === WebSocket.CONNECTING
-      ) {
-        previousSocket.close();
-      }
-
-      if (socketRef.current === previousSocket) {
-        socketRef.current = null;
-      }
-    }
-
+  const pollGameState = async (isActive = true) => {
     try {
-      if (isActive) setSocketStatus("connecting");
-
-      const wsUrl = `${WS_BASE_URL}/ws/chat/${roomId}?token=${encodeURIComponent(token)}`;
-      console.log("Connecting WebSocket:", wsUrl);
-
-      const ws = new WebSocket(wsUrl);
-      socketRef.current = ws;
-
-      ws.onopen = () => {
-        if (!isActive || socketRef.current !== ws) return;
-        console.log("WebSocket connected successfully.");
-        setSocketStatus("connected");
-        setWarningMsg(null);
-      };
-
-      ws.onmessage = (event) => {
-        if (!isActive || socketRef.current !== ws) return;
-
-        try {
-          const data = JSON.parse(event.data);
-
-          if (data.type === "chat") {
-            setMessages((prev) => [...prev, data]);
-
-            if (data.username === currentUser?.username) {
-              if (data.warning_triggered) {
-                setWarningMsg(
-                  "Automated warning issued: Toxicity detected. Please keep the conversation friendly."
-                );
-
-                if (warningTimerRef.current) {
-                  clearTimeout(warningTimerRef.current);
-                }
-
-                warningTimerRef.current = setTimeout(() => {
-                  setWarningMsg(null);
-                  warningTimerRef.current = null;
-                }, 10000);
-              }
-
-              if (data.restriction_triggered) {
-  startRestrictionTimer(
-    "Chat Restricted: You have been muted for 5 minutes due to repeated toxicity violations."
-  );
-}
-            }
-          } else if (data.type === "system") {
-            setMessages((prev) => [...prev, data]);
-
-        if (data.status === "Restricted" || data.status === "RESTRICTED") {
-  startRestrictionTimer(
-    "Chat Restricted: You are currently muted. Game viewing and moves are still allowed."
-  );
-}
-            // If server notified a room status update (start/close), handle it
-            if (data.room_status) {
-              if (data.room_status === 'FINISHED' || data.room_status === 'CLOSED') {
-                setError('This room has been closed by the host.');
-                setTimeout(() => navigate('/play-lobby'), 1500);
-                return;
-              }
-              fetchRoomData(isActive);
-            }
-
-            if (data.message?.includes("entered the room")) {
-              fetchRoomData(isActive);
-            }
-          } else if (data.type === "game_move") {
-            setGameState(data.state);
-          }
-        } catch (parseError) {
-          console.error("WebSocket message parsing error:", parseError);
-        }
-      };
-
-      ws.onerror = (event) => {
-        console.error("WebSocket error:", event);
-        if (!isActive || socketRef.current !== ws) return;
-        setSocketStatus("error");
-      };
-
-      ws.onclose = (event) => {
-        console.log("WebSocket closed:", event.code, event.reason);
-        if (!isActive || socketRef.current !== ws) return;
-
-        socketRef.current = null;
-        setSocketStatus("disconnected");
-
-        if (event.reason === "Invalid token") {
-          setError("Your login session has expired. Please log in again.");
-          setTimeout(() => navigate("/login"), 2000);
-          return;
-        }
-
-        if (event.reason === "User not found") {
-          setError("Your user account could not be found.");
-          return;
-        }
-
-        if (event.reason === "Room does not exist") {
-          setError("This game room no longer exists.");
-          return;
-        }
-
-        if (event.code !== 1000 && event.code !== 1001) {
-          setWarningMsg(
-            "Real-time connection was interrupted. Please refresh the page to reconnect."
-          );
-        }
-      };
+      const response = await fetch(`${API_BASE_URL}/rooms/${roomId}/game-state`, {
+        headers: authHeaders(),
+      });
+      if (!response.ok) throw new Error("Could not load game state.");
+      const data = await response.json();
+      if (!isActive || data.version <= gameStateVersionRef.current) return;
+      gameStateVersionRef.current = data.version;
+      setGameState(data.state);
     } catch (err) {
-      console.error("WebSocket setup error:", err);
+      if (isActive) console.error("Game state polling error:", err);
+    }
+  };
+
+  const pollChat = async (isActive = true) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/rooms/${roomId}/chat`, {
+        headers: authHeaders(),
+      });
+      if (!response.ok) throw new Error("Could not load chat messages.");
+      const incoming = await response.json();
+      if (!isActive) return;
+      setChatStatus("connected");
+
+      const newMessages = incoming.filter((message) => !chatMessageIdsRef.current.has(message.id));
+      if (!newMessages.length) return;
+      newMessages.forEach((message) => chatMessageIdsRef.current.add(message.id));
+      setMessages((previous) => [...previous, ...newMessages]);
+
+      const ownMessages = newMessages.filter((message) => message.username === currentUser?.username);
+      if (ownMessages.some((message) => message.warning_triggered)) {
+        setWarningMsg("Automated warning issued: Toxicity detected. Please keep the conversation friendly.");
+      }
+    } catch (err) {
       if (isActive) {
-        setSocketStatus("error");
-        setWarningMsg("Could not start the real-time connection.");
+        setChatStatus("error");
+        console.error("Chat polling error:", err);
       }
     }
   };
@@ -278,25 +149,62 @@ const restrictionTimerRef = useRef(null);
     e.preventDefault();
     const message = chatInput.trim();
 
-    if (!message || restriction) return;
+    if (!message) return;
 
-    const ws = socketRef.current;
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
-      setWarningMsg("Chat connection is not ready. Please wait or refresh.");
-      return;
-    }
-
-    ws.send(JSON.stringify({ type: "chat", message }));
-    setChatInput("");
+    fetch(`${API_BASE_URL}/rooms/${roomId}/chat`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ message }),
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          const detail = await response.json().catch(() => ({}));
+          throw new Error(detail.detail || "Could not send chat message.");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        chatMessageIdsRef.current.add(data.id);
+        setMessages((previous) => [...previous, data]);
+        if (data.warning_triggered) {
+          setWarningMsg("Automated warning issued: Toxicity detected. Please keep the conversation friendly.");
+        }
+        setChatInput("");
+      })
+      .catch((err) => setWarningMsg(err.message));
   };
 
   const sendGameMove = (updatedState) => {
+    if (moveInFlightRef.current) return;
+    moveInFlightRef.current = true;
     setGameState(updatedState);
 
-    const ws = socketRef.current;
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: "game_move", state: updatedState }));
-    }
+    fetch(`${API_BASE_URL}/rooms/${roomId}/game-state`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ state: updatedState, version: gameStateVersionRef.current }),
+    })
+      .then(async (response) => {
+        if (response.status === 409) {
+          await pollGameState(true);
+          return;
+        }
+        if (!response.ok) throw new Error("Could not save game move.");
+        return response.json();
+      })
+      .then((data) => {
+        if (data?.state) {
+          gameStateVersionRef.current = data.version;
+          setGameState(data.state);
+        }
+      })
+      .catch((err) => {
+        console.error("Game move error:", err);
+        pollGameState(true);
+      })
+      .finally(() => {
+        moveInFlightRef.current = false;
+      });
   };
 
   const handleLeaveRoom = async () => {
@@ -308,6 +216,10 @@ const restrictionTimerRef = useRef(null);
     } catch (err) {
       console.error("Error leaving room:", err);
     } finally {
+      if (pollingTimerRef.current) {
+        clearInterval(pollingTimerRef.current);
+        pollingTimerRef.current = null;
+      }
       const ws = socketRef.current;
       if (ws) {
         ws.onopen = null;
@@ -423,7 +335,6 @@ const restrictionTimerRef = useRef(null);
       </header>
 
       {warningMsg && <div style={styles.warningBox}>{warningMsg}</div>}
-      {restriction && <div style={styles.restrictionBox}>{restriction}</div>}
 
       <div style={currentGridStyle} className="room-main-grid">
         <div className="card glass game-area" style={styles.gameArea}>
@@ -449,17 +360,16 @@ const restrictionTimerRef = useRef(null);
             <span
               style={{
                 ...styles.socketStatus,
-                color:
-                  socketStatus === "connected"
-                    ? "var(--status-safe)"
-                    : "var(--status-toxic)",
+                color: chatStatus === "connected"
+                  ? "var(--status-safe)"
+                  : "var(--status-toxic)",
               }}
             >
-              {socketStatus === "connected"
-                ? "● Connected"
-                : socketStatus === "connecting"
+              {chatStatus === "connected"
+                ? "● Polling"
+                : chatStatus === "connecting"
                 ? "● Connecting..."
-                : "● Disconnected"}
+                : "● Unavailable"}
             </span>
           </div>
 
@@ -513,34 +423,18 @@ const restrictionTimerRef = useRef(null);
           <form onSubmit={handleSendChat} style={styles.chatForm}>
             <input
               type="text"
-              placeholder={
-                restriction
-                  ? "You are restricted..."
-                  : socketStatus === "connected"
-                  ? "Type a message..."
-                  : "Connecting to chat..."
-              }
+              placeholder="Type a message..."
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
-              disabled={!!restriction || socketStatus !== "connected"}
               style={styles.chatInput}
             />
 
             <button
               type="submit"
-              disabled={
-                !!restriction ||
-                socketStatus !== "connected" ||
-                !chatInput.trim()
-              }
+              disabled={!chatInput.trim()}
               style={{
                 ...styles.sendBtn,
-                opacity:
-                  restriction ||
-                  socketStatus !== "connected" ||
-                  !chatInput.trim()
-                    ? 0.6
-                    : 1,
+                opacity: !chatInput.trim() ? 0.6 : 1,
               }}
             >
               Send
