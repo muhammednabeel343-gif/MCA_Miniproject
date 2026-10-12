@@ -3,15 +3,15 @@ import joblib
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 
-TRAIN_PATH = "dataset/train.csv"
-TEST_PATH = "dataset/test.csv"
+TRAIN_PATH = "ml/artifacts/train.csv"
+TEST_PATH = "ml/artifacts/test.csv"
 
 VECTORIZER_PATH = "ml/tfidf_vectorizer.pkl"
 
 
 # Load train and test datasets
-train_df = pd.read_csv(TRAIN_PATH)
-test_df = pd.read_csv(TEST_PATH)
+train_df = pd.read_csv(TRAIN_PATH, keep_default_na=False)
+test_df = pd.read_csv(TEST_PATH, keep_default_na=False)
 
 X_train_text = train_df["cleaned_text"]
 X_test_text = test_df["cleaned_text"]
@@ -20,8 +20,7 @@ X_test_text = test_df["cleaned_text"]
 # Create TF-IDF vectorizer
 vectorizer = TfidfVectorizer(
     max_features=10000,
-    ngram_range=(1, 2),
-    min_df=2
+    ngram_range=(1, 2)
 )
 
 

@@ -5,21 +5,21 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
 
-TRAIN_PATH = "dataset/train.csv"
-TEST_PATH = "dataset/test.csv"
+TRAIN_PATH = "ml/artifacts/train.csv"
+TEST_PATH = "ml/artifacts/test.csv"
 VECTORIZER_PATH = "ml/tfidf_vectorizer.pkl"
 MODEL_PATH = "ml/logistic_regression_model.pkl"
 
 
 # Load train and test datasets
-train_df = pd.read_csv(TRAIN_PATH)
-test_df = pd.read_csv(TEST_PATH)
+train_df = pd.read_csv(TRAIN_PATH, keep_default_na=False)
+test_df = pd.read_csv(TEST_PATH, keep_default_na=False)
 
 X_train_text = train_df["cleaned_text"]
 X_test_text = test_df["cleaned_text"]
 
-y_train = train_df["cyberbullying_type"]
-y_test = test_df["cyberbullying_type"]
+y_train = train_df["label"]
+y_test = test_df["label"]
 
 
 # Load the TF-IDF vectorizer fitted on training data

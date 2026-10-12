@@ -1,0 +1,362 @@
+{
+  "dataset": {
+    "source": "dataset/train.csv",
+    "total_rows": 42959,
+    "train_rows": 34367,
+    "test_rows": 8592,
+    "normalized_text_overlap": {
+      "test_rows_with_text_in_train": 3685,
+      "test_row_percentage": 42.888733705772815,
+      "distinct_shared_texts": 1290,
+      "nonempty_test_rows_with_text_in_train": 3530
+    },
+    "class_distribution": {
+      "0": {
+        "name": "Non-Toxic",
+        "total": 34797,
+        "train": 27838,
+        "test": 6959,
+        "percentage": 81.00048883819456
+      },
+      "1": {
+        "name": "Insults & Flaming",
+        "total": 5925,
+        "train": 4740,
+        "test": 1185,
+        "percentage": 13.792220489303755
+      },
+      "2": {
+        "name": "Other Offensive Texts",
+        "total": 1874,
+        "train": 1499,
+        "test": 375,
+        "percentage": 4.362298936194977
+      },
+      "3": {
+        "name": "Hate & Harassment",
+        "total": 279,
+        "train": 223,
+        "test": 56,
+        "percentage": 0.6494564584836705
+      },
+      "4": {
+        "name": "Threats",
+        "total": 60,
+        "train": 48,
+        "test": 12,
+        "percentage": 0.13966805558788611
+      },
+      "5": {
+        "name": "Extremism",
+        "total": 24,
+        "train": 19,
+        "test": 5,
+        "percentage": 0.055867222235154446
+      }
+    }
+  },
+  "models": {
+    "logistic_regression": {
+      "train": {
+        "accuracy": 0.8984199959263247,
+        "weighted_precision": 0.8913449272558059,
+        "weighted_recall": 0.8984199959263247,
+        "weighted_f1": 0.8829883923414641,
+        "macro_precision": 0.6320815258452824,
+        "macro_recall": 0.3301826064898974,
+        "macro_f1": 0.3746457231090284,
+        "per_class": {
+          "Non-Toxic": {
+            "precision": 0.9048401946600027,
+            "recall": 0.9885049213305553,
+            "f1": 0.9448240343347639,
+            "support": 27838
+          },
+          "Insults & Flaming": {
+            "precision": 0.8663526641153959,
+            "recall": 0.6208860759493671,
+            "f1": 0.7233624185817868,
+            "support": 4740
+          },
+          "Other Offensive Texts": {
+            "precision": 0.7462962962962963,
+            "recall": 0.2688458972648432,
+            "f1": 0.3952918097106425,
+            "support": 1499
+          },
+          "Hate & Harassment": {
+            "precision": 0.9,
+            "recall": 0.04035874439461883,
+            "f1": 0.07725321888412018,
+            "support": 223
+          },
+          "Threats": {
+            "precision": 0.375,
+            "recall": 0.0625,
+            "f1": 0.10714285714285714,
+            "support": 48
+          },
+          "Extremism": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 19
+          }
+        }
+      },
+      "test": {
+        "accuracy": 0.8858240223463687,
+        "weighted_precision": 0.8717073821941864,
+        "weighted_recall": 0.8858240223463687,
+        "weighted_f1": 0.8690530667451218,
+        "macro_precision": 0.5081254375255484,
+        "macro_recall": 0.3073091663092964,
+        "macro_f1": 0.34122762595813144,
+        "per_class": {
+          "Non-Toxic": {
+            "precision": 0.8989221871713985,
+            "recall": 0.982756143124012,
+            "f1": 0.9389716482460355,
+            "support": 6959
+          },
+          "Insults & Flaming": {
+            "precision": 0.8236714975845411,
+            "recall": 0.5755274261603376,
+            "f1": 0.6775956284153005,
+            "support": 1185
+          },
+          "Other Offensive Texts": {
+            "precision": 0.5761589403973509,
+            "recall": 0.232,
+            "f1": 0.33079847908745247,
+            "support": 375
+          },
+          "Hate & Harassment": {
+            "precision": 0.75,
+            "recall": 0.05357142857142857,
+            "f1": 0.1,
+            "support": 56
+          },
+          "Threats": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 12
+          },
+          "Extremism": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 5
+          }
+        }
+      },
+      "train_test_gaps": {
+        "accuracy": 0.01259597357995601,
+        "weighted_f1": 0.013935325596342252,
+        "macro_f1": 0.03341809715089694
+      },
+      "test_confusion_matrix": [
+        [
+          6839,
+          82,
+          37,
+          0,
+          1,
+          0
+        ],
+        [
+          477,
+          682,
+          25,
+          1,
+          0,
+          0
+        ],
+        [
+          235,
+          53,
+          87,
+          0,
+          0,
+          0
+        ],
+        [
+          44,
+          7,
+          2,
+          3,
+          0,
+          0
+        ],
+        [
+          10,
+          2,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          3,
+          2,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    "linear_svm": {
+      "train": {
+        "accuracy": 0.9342101434515669,
+        "weighted_precision": 0.931313480066088,
+        "weighted_recall": 0.9342101434515669,
+        "weighted_f1": 0.9298520767331714,
+        "macro_precision": 0.8975555324421559,
+        "macro_recall": 0.6497948023857244,
+        "macro_f1": 0.7416737323015231,
+        "per_class": {
+          "Non-Toxic": {
+            "precision": 0.9429991431019709,
+            "recall": 0.9882893886055033,
+            "f1": 0.9651132197919773,
+            "support": 27838
+          },
+          "Insults & Flaming": {
+            "precision": 0.8988902589395807,
+            "recall": 0.7689873417721519,
+            "f1": 0.8288800454803866,
+            "support": 4740
+          },
+          "Other Offensive Texts": {
+            "precision": 0.8207547169811321,
+            "recall": 0.5223482321547699,
+            "f1": 0.638401956787607,
+            "support": 1499
+          },
+          "Hate & Harassment": {
+            "precision": 0.9285714285714286,
+            "recall": 0.5829596412556054,
+            "f1": 0.7162534435261708,
+            "support": 223
+          },
+          "Threats": {
+            "precision": 0.7941176470588235,
+            "recall": 0.5625,
+            "f1": 0.6585365853658537,
+            "support": 48
+          },
+          "Extremism": {
+            "precision": 1.0,
+            "recall": 0.47368421052631576,
+            "f1": 0.6428571428571429,
+            "support": 19
+          }
+        }
+      },
+      "test": {
+        "accuracy": 0.8896648044692738,
+        "weighted_precision": 0.8768556152240057,
+        "weighted_recall": 0.8896648044692738,
+        "weighted_f1": 0.8787776709014673,
+        "macro_precision": 0.7288498326815386,
+        "macro_recall": 0.4800377796348618,
+        "macro_f1": 0.5581629997042544,
+        "per_class": {
+          "Non-Toxic": {
+            "precision": 0.912885418069207,
+            "recall": 0.974277913493318,
+            "f1": 0.9425830668705686,
+            "support": 6959
+          },
+          "Insults & Flaming": {
+            "precision": 0.7931404072883173,
+            "recall": 0.6244725738396625,
+            "f1": 0.6987724268177526,
+            "support": 1185
+          },
+          "Other Offensive Texts": {
+            "precision": 0.5170731707317073,
+            "recall": 0.2826666666666667,
+            "f1": 0.36551724137931035,
+            "support": 375
+          },
+          "Hate & Harassment": {
+            "precision": 0.65,
+            "recall": 0.23214285714285715,
+            "f1": 0.34210526315789475,
+            "support": 56
+          },
+          "Threats": {
+            "precision": 0.5,
+            "recall": 0.16666666666666666,
+            "f1": 0.25,
+            "support": 12
+          },
+          "Extremism": {
+            "precision": 1.0,
+            "recall": 0.6,
+            "f1": 0.75,
+            "support": 5
+          }
+        }
+      },
+      "train_test_gaps": {
+        "accuracy": 0.04454533898229318,
+        "weighted_f1": 0.051074405831704084,
+        "macro_f1": 0.1835107325972687
+      },
+      "test_confusion_matrix": [
+        [
+          6780,
+          120,
+          54,
+          3,
+          2,
+          0
+        ],
+        [
+          399,
+          740,
+          42,
+          4,
+          0,
+          0
+        ],
+        [
+          208,
+          61,
+          106,
+          0,
+          0,
+          0
+        ],
+        [
+          32,
+          9,
+          2,
+          13,
+          0,
+          0
+        ],
+        [
+          6,
+          3,
+          1,
+          0,
+          2,
+          0
+        ],
+        [
+          2,
+          0,
+          0,
+          0,
+          0,
+          3
+        ]
+      ]
+    }
+  }
+}

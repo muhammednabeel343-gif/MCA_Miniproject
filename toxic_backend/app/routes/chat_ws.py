@@ -24,7 +24,7 @@ from app.models import (
     GameRoomPlayer,
 )
 from app.services.auth import decode_access_token, require_active_user
-from app.services.moderation import refresh_moderation_status
+from app.services.moderation import refresh_moderation_status, get_active_restriction_end
 from app.services.model_service import predict_message
 
 
@@ -63,6 +63,13 @@ def serialize_chat_message(chat_record):
         "confidence": chat_record.confidence,
         "timestamp": chat_record.created_at.isoformat(),
     }
+
+
+def format_restriction_message(user: User, db: Session) -> str:
+    end_time = get_active_restriction_end(user, db)
+    if end_time is None:
+        return "Your chat access is restricted for the current moderation period."
+    return f"Your chat access is restricted until {end_time.isoformat()} UTC."
 
 
 # ============================================================
@@ -147,6 +154,11 @@ def send_room_chat_message(
         raise HTTPException(status_code=400, detail="Message cannot be empty")
     if current_user.account_status == "BLOCKED":
         raise HTTPException(status_code=403, detail="Blocked users cannot send chat messages")
+    if current_user.account_status == "RESTRICTED":
+        raise HTTPException(
+            status_code=403,
+            detail=format_restriction_message(current_user, db),
+        )
     prediction_result = predict_message(message_text)
     chat_record = ChatMessageDB(
         user_id=current_user.id,
@@ -380,6 +392,18 @@ async def websocket_chat_endpoint(
                     ).isoformat(),
                 }
             )
+        elif user.account_status == "RESTRICTED":
+            await websocket.send_json(
+                {
+                    "type": "system",
+                    "message": format_restriction_message(user, db),
+                    "status": "RESTRICTED",
+                    "username": "System",
+                    "timestamp": datetime.now(
+                        timezone.utc
+                    ).isoformat(),
+                }
+            )
 
         # ====================================================
         # MAIN WEBSOCKET LOOP
@@ -436,7 +460,7 @@ async def websocket_chat_endpoint(
                 continue
 
             # =================================================
-            # BLOCKED USER
+            # BLOCKED / RESTRICTED USER
             # =================================================
 
             if user.account_status == "BLOCKED":
@@ -456,6 +480,20 @@ async def websocket_chat_endpoint(
                     }
                 )
 
+                continue
+
+            if user.account_status == "RESTRICTED":
+                await websocket.send_json(
+                    {
+                        "type": "system",
+                        "message": format_restriction_message(user, db),
+                        "status": "RESTRICTED",
+                        "username": "System",
+                        "timestamp": datetime.now(
+                            timezone.utc
+                        ).isoformat(),
+                    }
+                )
                 continue
 
             # =================================================

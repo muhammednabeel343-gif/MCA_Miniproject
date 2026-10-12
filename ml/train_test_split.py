@@ -1,21 +1,22 @@
+import os
+
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
 
-INPUT_PATH = "dataset/preprocessed_cyberbullying.csv"
+INPUT_PATH = "dataset/gametox_preprocessed.csv"
 
-TRAIN_PATH = "dataset/train.csv"
-TEST_PATH = "dataset/test.csv"
+OUTPUT_DIR = "ml/artifacts"
+TRAIN_PATH = os.path.join(OUTPUT_DIR, "train.csv")
+TEST_PATH = os.path.join(OUTPUT_DIR, "test.csv")
 
 
-# Load preprocessed dataset
-df = pd.read_csv(INPUT_PATH)
+df = pd.read_csv(INPUT_PATH, keep_default_na=False)
 
 print("Total records:", len(df))
 
-# Separate features and labels
 X = df["cleaned_text"]
-y = df["cyberbullying_type"]
+y = df["label"]
 
 
 # Split into 80% training and 20% testing
@@ -27,33 +28,28 @@ X_train, X_test, y_train, y_test = train_test_split(
     stratify=y
 )
 
-
-# Create training and testing DataFrames
 train_df = pd.DataFrame({
     "cleaned_text": X_train,
-    "cyberbullying_type": y_train
+    "label": y_train
 })
 
 test_df = pd.DataFrame({
     "cleaned_text": X_test,
-    "cyberbullying_type": y_test
+    "label": y_test
 })
 
-
-# Save datasets
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 train_df.to_csv(TRAIN_PATH, index=False)
 test_df.to_csv(TEST_PATH, index=False)
 
-
-# Display results
 print("\nTraining records:", len(train_df))
 print("Testing records:", len(test_df))
 
 print("\nTraining class distribution:")
-print(train_df["cyberbullying_type"].value_counts())
+print(train_df["label"].value_counts().sort_index())
 
 print("\nTesting class distribution:")
-print(test_df["cyberbullying_type"].value_counts())
+print(test_df["label"].value_counts().sort_index())
 
 print("\nTraining dataset saved to:", TRAIN_PATH)
 print("Testing dataset saved to:", TEST_PATH)

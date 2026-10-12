@@ -1,0 +1,32 @@
+GameTox data validation report
+Source: dataset/train.csv
+Original rows: 42959
+Exact full-row duplicates: 0
+Repeated message+label rows: 14418
+Empty/null source messages: 0
+Invalid labels (must be integer 0..5): 0
+
+Class value -> number of records -> sample messages
+0 (Non-Toxic) -> 34797
+  Samples: ['no rush', 'whatever ... watch the replay', '3 gunmark', 'lol', 'i softened him lol']
+1 (Insults & Flaming) -> 5925
+  Samples: ['useless', 'stupid kids grow up', 'shut the fuck up please', 'y and fail more noobie', 'bot']
+2 (Other Offensive Texts) -> 1874
+  Samples: ['wtf', 'hes playing for draw really?', 'eat shit', 'holy crap its almost like playing the wrong side of the map was stupid', '3 lts and no fcking spot, gg']
+3 (Hate & Harassment) -> 279
+  Samples: ['fuck you putin ho ri', 'm103 help the 122 you incest faggot', 'asia camping mode', 'fgt', 'імбіцил сука']
+4 (Threats) -> 60
+  Samples: ['I will **** claus ******', 'so go die dement', 'I hope you will be gang banged', '110e3 *** mother sıster', 'hope your family die in fire']
+5 (Extremism) -> 24
+  Samples: ['rusia - terorist', 'STUYOU RUSIA AND NAZ1 LEMMIN O ALL ONE SIDE', 'ADOLF 1D1OT CRYING B1TCH', 'putin is gay tho', 'FASZYSTOWSKIE ŚWINIE WOTOWSKA WAGNEROWSKA BANDA WSPIERAJĄCA FASZYZM']
+
+Previous pipeline loss accounting (sequential):
+Repeated message+label rows removed: 14418
+Rows normalized to empty by the old ASCII-only cleaner: 2102
+Normalized conflict groups: 332
+Rows removed from normalized conflict groups: 1138
+Additional same-normalized-text rows removed: 1143
+Previous pipeline final rows: 24158
+Previous pipeline total rows removed: 18801
+
+The current six-class pipeline retains every validated source row.

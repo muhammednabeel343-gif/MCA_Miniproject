@@ -42,39 +42,18 @@ svm_model = joblib.load(SVM_MODEL_PATH)
 vectorizer = joblib.load(VECTORIZER_PATH)
 
 
-# -----------------------------
-# User-friendly labels
-LABEL_MAP = {
-    "age": "age",
-    "ethnicity": "ethnicity",
-    "gender": "gender",
-    "religion": "religion",
-    "other_cyberbullying": "other_cyberbullying",
-    "not_cyberbullying": "not_cyberbullying"
+CLASS_NAMES = {
+    0: "Non-Toxic",
+    1: "Insults & Flaming",
+    2: "Other Offensive Texts",
+    3: "Hate & Harassment",
+    4: "Threats",
+    5: "Extremism",
 }
 
 
-# =====================================================
-# CLEARLY TOXIC WORDS
-# =====================================================
-TOXIC_WORDS = {
-    "idiot",
-    "stupid",
-    "dumb",
-    "moron",
-    "loser",
-    "trash",
-    "sucks",
-    "suck",
-    "shut up",
-    "hate",
-    "pathetic",
-    "useless",
-    "fool",
-    "jerk",
-    "ugly",
-    "annoying"
-}
+def display_prediction(label):
+    return CLASS_NAMES[int(label)]
 
 
 # =====================================================
@@ -272,24 +251,6 @@ def safe_result(selected_model="Safe Message Rule"):
 
 
 # =====================================================
-# TOXIC RESULT HELPER
-# =====================================================
-def toxic_keyword_result():
-    return {
-        "prediction": "General Toxicity",
-        "status": "Toxic",
-        "confidence": 100.0,
-        "selected_model": "Toxic Keyword Rule",
-
-        "logistic_regression_prediction": "Not Evaluated",
-        "logistic_regression_confidence": 0.0,
-
-        "svm_prediction": "Not Evaluated",
-        "svm_confidence": 0.0
-    }
-
-
-# =====================================================
 # Prediction
 # =====================================================
 def predict_message(message: str):
@@ -304,25 +265,6 @@ def predict_message(message: str):
     # -----------------------------
     if not cleaned_message:
         return safe_result("Empty Message Rule")
-
-    # =================================================
-    # IMPORTANT:
-    # Check toxic words BEFORE normal chat rules
-    # =================================================
-    for word in TOXIC_WORDS:
-
-        # For multi-word toxic phrases
-        if " " in word:
-            if word in cleaned_message:
-                return toxic_keyword_result()
-
-        # For single toxic words
-        else:
-            if re.search(
-                r"\b" + re.escape(word) + r"\b",
-                cleaned_message
-            ):
-                return toxic_keyword_result()
 
     # =================================================
     # Exact known safe messages
@@ -353,28 +295,19 @@ def predict_message(message: str):
         message_vector
     )[0]
 
-    lr_index = np.argmax(lr_probabilities)
-
+    lr_index = int(np.argmax(lr_probabilities))
     lr_prediction = lr_model.classes_[lr_index]
-
-    lr_confidence = float(
-        lr_probabilities[lr_index]
-    )
+    lr_confidence = float(lr_probabilities[lr_index])
 
     # =================================================
     # SVM prediction
     # =================================================
-    svm_probabilities = svm_model.predict_proba(
-        message_vector
-    )[0]
-
-    svm_index = np.argmax(svm_probabilities)
-
+    svm_scores = svm_model.decision_function(message_vector)[0]
+    svm_probabilities = np.exp(svm_scores - np.max(svm_scores))
+    svm_probabilities /= svm_probabilities.sum()
+    svm_index = int(np.argmax(svm_probabilities))
     svm_prediction = svm_model.classes_[svm_index]
-
-    svm_confidence = float(
-        svm_probabilities[svm_index]
-    )
+    svm_confidence = float(svm_probabilities[svm_index])
 
     # =================================================
     # Ensemble probabilities
@@ -416,60 +349,18 @@ def predict_message(message: str):
             svm_class_probability
         ) / 2
 
-    # =================================================
-    # Safe vs Toxic
-    # =================================================
-    safe_probability = ensemble_probabilities.get(
-        "not_cyberbullying",
-        0.0
+    final_prediction = max(
+        ensemble_probabilities,
+        key=ensemble_probabilities.get,
     )
-
-    toxic_probability = sum(
-        probability
-        for class_name, probability
-        in ensemble_probabilities.items()
-        if class_name != "not_cyberbullying"
-    )
-
-    # =================================================
-    # Final decision
-    # =================================================
-    if safe_probability >= toxic_probability:
-
-        status = "Safe"
-
-        final_prediction = "not_cyberbullying"
-
-        final_confidence = safe_probability
-
-    else:
-
-        status = "Toxic"
-
-        toxic_classes = {
-            class_name: probability
-            for class_name, probability
-            in ensemble_probabilities.items()
-            if class_name != "not_cyberbullying"
-        }
-
-        final_prediction = max(
-            toxic_classes,
-            key=toxic_classes.get
-        )
-
-        final_confidence = toxic_classes[
-            final_prediction
-        ]
+    status = "Safe" if final_prediction == 0 else "Toxic"
+    final_confidence = ensemble_probabilities[final_prediction]
 
     # =================================================
     # Return result
     # =================================================
     return {
-        "prediction": LABEL_MAP.get(
-            final_prediction,
-            final_prediction
-        ),
+        "prediction": display_prediction(final_prediction),
 
         "status": status,
 
@@ -480,20 +371,14 @@ def predict_message(message: str):
 
         "selected_model": "Ensemble (LR + SVM)",
 
-        "logistic_regression_prediction": LABEL_MAP.get(
-            lr_prediction,
-            lr_prediction
-        ),
+        "logistic_regression_prediction": display_prediction(lr_prediction),
 
         "logistic_regression_confidence": round(
             lr_confidence * 100,
             2
         ),
 
-        "svm_prediction": LABEL_MAP.get(
-            svm_prediction,
-            svm_prediction
-        ),
+        "svm_prediction": display_prediction(svm_prediction),
 
         "svm_confidence": round(
             svm_confidence * 100,

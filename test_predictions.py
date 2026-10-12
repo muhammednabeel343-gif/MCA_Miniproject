@@ -1,18 +1,10 @@
-from backend.app.services.model_service import predict_message
+from toxic_backend.app.services.model_service import predict_message
 
 
 test_messages = [
-    "hey",
-    "hello",
-    "hi",
-    "good morning",
-    "nice game",
-    "good game",
-    "thanks",
-    "you are stupid",
-    "you are an idiot",
-    "i hate you",
-    "you are such an idiot"
+    "you are a fool ",
+    
+    
 ]
 
 

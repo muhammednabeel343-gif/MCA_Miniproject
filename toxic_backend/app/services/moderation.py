@@ -11,20 +11,15 @@ def utc_now() -> datetime:
 
 def as_utc(value: datetime) -> datetime:
     """Normalize database timestamps before comparing them with UTC now."""
+    if value is None:
+        return None
     if value.tzinfo is None:
         return value.replace(tzinfo=timezone.utc)
     return value.astimezone(timezone.utc)
 
 
-def refresh_moderation_status(user: User, db: Session) -> User:
-    """Resolve temporary restrictions without ever changing a blocked user."""
-    if user.account_status == "BLOCKED":
-        return user
-
-    if user.account_status != "RESTRICTED":
-        return user
-
-    latest_action = (
+def get_latest_moderation_action(user: User, db: Session) -> ModerationAction | None:
+    return (
         db.query(ModerationAction)
         .filter(
             ModerationAction.user_id == user.id,
@@ -34,18 +29,52 @@ def refresh_moderation_status(user: User, db: Session) -> User:
         .first()
     )
 
-    if (
-        latest_action
-        and latest_action.action_type == "RESTRICT"
-        and latest_action.restriction_end
-        and utc_now() < as_utc(latest_action.restriction_end)
-    ):
+
+def get_active_restriction_end(user: User, db: Session) -> datetime | None:
+    latest_action = get_latest_moderation_action(user, db)
+    if not latest_action or latest_action.action_type != "RESTRICT":
+        return None
+    if not latest_action.restriction_end:
+        return None
+    if utc_now() >= as_utc(latest_action.restriction_end):
+        return None
+    return as_utc(latest_action.restriction_end)
+
+
+def refresh_moderation_status(user: User, db: Session) -> User:
+    """Keep account status synchronized with the latest moderation action."""
+    latest_action = get_latest_moderation_action(user, db)
+
+    if latest_action and latest_action.action_type == "BLOCK":
+        if user.account_status != "BLOCKED":
+            user.account_status = "BLOCKED"
+            db.add(user)
+            db.commit()
+            db.refresh(user)
         return user
 
-    user.account_status = "ACTIVE"
-    db.add(user)
-    db.commit()
-    db.refresh(user)
+    if latest_action and latest_action.action_type == "UNBLOCK":
+        if user.account_status != "ACTIVE":
+            user.account_status = "ACTIVE"
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+        return user
+
+    active_restriction_end = get_active_restriction_end(user, db)
+    if active_restriction_end is not None:
+        if user.account_status != "RESTRICTED":
+            user.account_status = "RESTRICTED"
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+        return user
+
+    if user.account_status != "ACTIVE":
+        user.account_status = "ACTIVE"
+        db.add(user)
+        db.commit()
+        db.refresh(user)
     return user
 
 

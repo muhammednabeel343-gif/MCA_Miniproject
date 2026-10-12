@@ -1,0 +1,23 @@
+Logistic Regression six-class test evaluation
+
+accuracy: 0.885824
+weighted_precision: 0.871707
+weighted_recall: 0.885824
+weighted_f1: 0.869053
+macro_precision: 0.508125
+macro_recall: 0.307309
+macro_f1: 0.341228
+
+Per-class report:
+                       precision    recall  f1-score   support
+
+            Non-Toxic     0.8989    0.9828    0.9390      6959
+    Insults & Flaming     0.8237    0.5755    0.6776      1185
+Other Offensive Texts     0.5762    0.2320    0.3308       375
+    Hate & Harassment     0.7500    0.0536    0.1000        56
+              Threats     0.0000    0.0000    0.0000        12
+            Extremism     0.0000    0.0000    0.0000         5
+
+             accuracy                         0.8858      8592
+            macro avg     0.5081    0.3073    0.3412      8592
+         weighted avg     0.8717    0.8858    0.8691      8592
