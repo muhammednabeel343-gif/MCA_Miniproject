@@ -136,11 +136,25 @@ const AdminDashboard = () => {
   }, [activeTab, flagsFilterPrediction, flagsStartDate, flagsEndDate]);
 
   // User moderation actions triggers
-  const handleRestrict = async (userId) => {
-    const mins = prompt("Enter restrict period in minutes:", "60");
-    if (!mins) return;
-    const reason = prompt("Reason for restriction:", "Violation of chat rules");
-    if (!reason) return;
+  const handleRestrict = async (userId, payload = null) => {
+    const restrictionPayload = payload ?? {
+      duration_minutes: (() => {
+        const mins = prompt("Enter restrict period in minutes:", "60");
+        if (mins === null || mins.trim() === "") return null;
+        const parsed = Number.parseInt(mins, 10);
+        return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+      })(),
+      reason: (() => {
+        const reason = prompt("Reason for restriction:", "Violation of chat rules");
+        if (reason === null || reason.trim() === "") return null;
+        return reason.trim();
+      })(),
+    };
+
+    if (!restrictionPayload?.duration_minutes || !restrictionPayload?.reason) {
+      return;
+    }
+
     try {
       const res = await fetch(`${API_BASE_URL}/admin/users/${userId}/restrict`, {
         method: "PATCH",
@@ -148,26 +162,34 @@ const AdminDashboard = () => {
           ...authHeaders(),
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ duration_minutes: parseInt(mins, 10), reason }),
+        body: JSON.stringify(restrictionPayload),
       });
       if (!res.ok) {
         const text = await res.text();
         throw new Error(text || "Failed to restrict user.");
       }
       alert("User restricted successfully.");
-      fetchAdminData();
+      await fetchAdminData();
       if (selectedUserDetails && selectedUserDetails.user && selectedUserDetails.user.id === userId) {
-        handleViewDetails(userId);
+        await handleViewDetails(userId);
       }
     } catch (err) {
       alert(err.message);
     }
   };
 
-  const handleBlock = async (userId) => {
-    if (!confirm("Are you sure you want to BLOCK this user? Access will be revoked.")) return;
-    const reason = prompt("Reason for blocking:", "Severe violations");
-    if (!reason) return;
+  const handleBlock = async (userId, payload = null) => {
+    const blockPayload = payload ?? (() => {
+      if (!confirm("Are you sure you want to BLOCK this user? Access will be revoked.")) return null;
+      const reason = prompt("Reason for blocking:", "Severe violations");
+      if (reason === null || reason.trim() === "") return null;
+      return { reason: reason.trim() };
+    })();
+
+    if (!blockPayload?.reason) {
+      return;
+    }
+
     try {
       const res = await fetch(`${API_BASE_URL}/admin/users/${userId}/block`, {
         method: "PATCH",
@@ -175,16 +197,16 @@ const AdminDashboard = () => {
           ...authHeaders(),
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ reason }),
+        body: JSON.stringify(blockPayload),
       });
       if (!res.ok) {
         const text = await res.text();
         throw new Error(text || "Failed to block user.");
       }
       alert("User blocked successfully.");
-      fetchAdminData();
+      await fetchAdminData();
       if (selectedUserDetails && selectedUserDetails.user && selectedUserDetails.user.id === userId) {
-        handleViewDetails(userId);
+        await handleViewDetails(userId);
       }
     } catch (err) {
       alert(err.message);
@@ -473,8 +495,8 @@ const AdminDashboard = () => {
             <div style={{display:'flex', gap:8, margin:'8px 0 16px 0'}}>
               {selectedUserDetails.user.account_status === 'ACTIVE' && (
                 <>
-                  <button onClick={()=>{ const mins = prompt('Restrict minutes','60'); if(!mins) return; const reason = prompt('Reason','Violation'); if(!reason) return; handleRestrict(selectedUserDetails.user.id); }} style={styles.restrictBtn}>Restrict</button>
-                  <button onClick={()=>{ if(!confirm('Block this user?')) return; const reason = prompt('Reason','Severe violation'); if(!reason) return; handleBlock(selectedUserDetails.user.id); }} style={styles.blockBtn}>Block</button>
+                  <button onClick={() => handleRestrict(selectedUserDetails.user.id)} style={styles.restrictBtn}>Restrict</button>
+                  <button onClick={() => handleBlock(selectedUserDetails.user.id)} style={styles.blockBtn}>Block</button>
                 </>
               )}
               {selectedUserDetails.user.account_status === 'RESTRICTED' && (

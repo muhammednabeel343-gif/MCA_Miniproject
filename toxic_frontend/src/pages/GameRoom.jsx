@@ -118,6 +118,27 @@ const warningTimerRef = useRef(null);
     }
   };
 
+  const mergeChatMessages = (incoming = []) => {
+    if (!incoming.length) return;
+
+    const deduped = incoming.filter((message) => {
+      if (message?.id == null) return true;
+      if (chatMessageIdsRef.current.has(message.id)) return false;
+      chatMessageIdsRef.current.add(message.id);
+      return true;
+    });
+
+    if (!deduped.length) return;
+    setMessages((previous) => {
+      const next = [...previous];
+      deduped.forEach((message) => {
+        const alreadyExists = next.some((existing) => existing.id && existing.id === message.id);
+        if (!alreadyExists) next.push(message);
+      });
+      return next;
+    });
+  };
+
   const pollChat = async (isActive = true) => {
     try {
       const response = await fetch(`${API_BASE_URL}/rooms/${roomId}/chat`, {
@@ -127,13 +148,9 @@ const warningTimerRef = useRef(null);
       const incoming = await response.json();
       if (!isActive) return;
       setChatStatus("connected");
+      mergeChatMessages(incoming);
 
-      const newMessages = incoming.filter((message) => !chatMessageIdsRef.current.has(message.id));
-      if (!newMessages.length) return;
-      newMessages.forEach((message) => chatMessageIdsRef.current.add(message.id));
-      setMessages((previous) => [...previous, ...newMessages]);
-
-      const ownMessages = newMessages.filter((message) => message.username === currentUser?.username);
+      const ownMessages = incoming.filter((message) => message.username === currentUser?.username);
       if (ownMessages.some((message) => message.warning_triggered)) {
         setWarningMsg("Automated warning issued: Toxicity detected. Please keep the conversation friendly.");
       }
@@ -164,8 +181,17 @@ const warningTimerRef = useRef(null);
         return response.json();
       })
       .then((data) => {
-        chatMessageIdsRef.current.add(data.id);
-        setMessages((previous) => [...previous, data]);
+        if (data?.id != null) {
+          chatMessageIdsRef.current.add(data.id);
+        }
+        setMessages((previous) => {
+          const next = [...previous];
+          if (data?.id != null && next.some((item) => item.id && item.id === data.id)) {
+            return next;
+          }
+          if (data) next.push(data);
+          return next;
+        });
         if (data.warning_triggered) {
           setWarningMsg("Automated warning issued: Toxicity detected. Please keep the conversation friendly.");
         }
@@ -382,11 +408,12 @@ const warningTimerRef = useRef(null);
     messages.map((m, index) => {
       const isOwn = m.username === currentUser?.username;
       const isSystem = m.username === "System";
-      const isToxic = m.status === "Toxic";
+      const predictionText = m.prediction || (m.status === "Toxic" ? "Toxic" : "Non-Toxic");
+      const hasPrediction = !isSystem && (m.prediction || m.status);
 
       return (
         <div
-          key={`${m.timestamp || index}-${index}`}
+          key={`${m.id ?? m.timestamp ?? index}-${index}`}
           style={{
             ...styles.messageRow,
             justifyContent: isOwn ? "flex-end" : "flex-start",
@@ -402,12 +429,12 @@ const warningTimerRef = useRef(null);
             <div style={styles.msgHeader}>
               <span style={styles.msgUser}>{m.username}</span>
 
-              {isToxic && (
+              {hasPrediction && (
                 <span
-                  className="badge badge-toxic"
-                  style={styles.toxicBadge}
+                  className={m.status === "Toxic" ? "badge badge-toxic" : "badge badge-safe"}
+                  style={m.status === "Toxic" ? styles.toxicBadge : styles.safeBadge}
                 >
-                  {m.prediction || "other_cyberbullying"} ({m.confidence}%)
+                  {predictionText} ({Number.isFinite(Number(m.confidence)) ? Number(m.confidence).toFixed(0) : 0}%)
                 </span>
               )}
             </div>
