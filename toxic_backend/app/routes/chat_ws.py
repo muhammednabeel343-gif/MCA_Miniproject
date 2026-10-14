@@ -12,20 +12,22 @@ from fastapi import (
     Query,
     status,
 )
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+from starlette.concurrency import run_in_threadpool
 
-from app.database import SessionLocal, get_db
-from app.models import (
+from ..database import SessionLocal, get_db
+from ..models import (
     User,
     ChatMessage as ChatMessageDB,
     GameRoom,
     ModerationAction,
     GameRoomPlayer,
 )
-from app.services.auth import decode_access_token, require_active_user
-from app.services.moderation import refresh_moderation_status, get_active_restriction_end
-from app.services.model_service import predict_message
+from ..services.auth import decode_access_token, require_active_user
+from ..services.moderation import refresh_moderation_status, get_active_restriction_end
+from ..services.model_service import predict_message
 
 
 logger = logging.getLogger("chat_ws")
@@ -35,6 +37,7 @@ router = APIRouter(tags=["chat"])
 
 class RoomChatMessage(BaseModel):
     message: str
+    client_message_id: str | None = Field(default=None, max_length=64)
 
 
 def require_chat_room_access(room_id: int, user: User, db: Session):
@@ -55,12 +58,16 @@ def serialize_chat_message(chat_record):
     return {
         "type": "chat",
         "id": chat_record.id,
+        "client_message_id": chat_record.client_message_id,
         "user_id": chat_record.user_id,
         "username": chat_record.user.username if chat_record.user else "Deleted User",
         "message": chat_record.message,
         "status": chat_record.status,
         "prediction": chat_record.prediction,
+        "warning_triggered": chat_record.status == "Toxic",
+        "restriction_triggered": False,
         "confidence": chat_record.confidence,
+        "confidence_is_calibrated": False,
         "timestamp": chat_record.created_at.isoformat(),
     }
 
@@ -70,6 +77,91 @@ def format_restriction_message(user: User, db: Session) -> str:
     if end_time is None:
         return "Your chat access is restricted for the current moderation period."
     return f"Your chat access is restricted until {end_time.isoformat()} UTC."
+
+
+def get_existing_chat_message(
+    db: Session,
+    user: User,
+    room: GameRoom,
+    client_message_id: str | None,
+):
+    if not client_message_id:
+        return None
+    return (
+        db.query(ChatMessageDB)
+        .filter(
+            ChatMessageDB.user_id == user.id,
+            ChatMessageDB.room_id == room.id,
+            ChatMessageDB.client_message_id == client_message_id,
+        )
+        .first()
+    )
+
+
+def persist_chat_message(
+    db: Session,
+    user: User,
+    room: GameRoom,
+    message_text: str,
+    client_message_id: str | None = None,
+    prediction_result: dict | None = None,
+    check_existing: bool = True,
+):
+    client_message_id = client_message_id or None
+    if check_existing:
+        existing_message = get_existing_chat_message(
+            db, user, room, client_message_id
+        )
+        if existing_message:
+            return existing_message, False
+
+    if prediction_result is None:
+        prediction_result = predict_message(message_text)
+    chat_record = ChatMessageDB(
+        user_id=user.id,
+        game_id=room.game_id,
+        room_id=room.id,
+        client_message_id=client_message_id,
+        message=message_text,
+        prediction=prediction_result["prediction"],
+        status=prediction_result["status"],
+        confidence=prediction_result["confidence"],
+        selected_model=prediction_result["selected_model"],
+        logistic_regression_prediction=prediction_result[
+            "logistic_regression_prediction"
+        ],
+        logistic_regression_confidence=prediction_result[
+            "logistic_regression_confidence"
+        ],
+        svm_prediction=prediction_result["svm_prediction"],
+        svm_confidence=prediction_result["svm_confidence"],
+    )
+    db.add(chat_record)
+
+    warning_triggered = prediction_result["status"] == "Toxic"
+    if warning_triggered:
+        user.warning_count += 1
+        db.add(user)
+        db.add(ModerationAction(
+            user_id=user.id,
+            action_type="WARNING",
+            reason=f"Toxic message: '{message_text}'",
+        ))
+
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        if client_message_id:
+            existing_message = get_existing_chat_message(
+                db, user, room, client_message_id
+            )
+            if existing_message:
+                return existing_message, False
+        raise
+
+    db.refresh(chat_record)
+    return chat_record, True
 
 
 # ============================================================
@@ -159,41 +251,17 @@ def send_room_chat_message(
             status_code=403,
             detail=format_restriction_message(current_user, db),
         )
-    prediction_result = predict_message(message_text)
-    chat_record = ChatMessageDB(
-        user_id=current_user.id,
-        game_id=room.game_id,
-        room_id=room_id,
-        message=message_text,
-        prediction=prediction_result["prediction"],
-        status=prediction_result["status"],
-        confidence=prediction_result["confidence"],
-        selected_model=prediction_result["selected_model"],
-        logistic_regression_prediction=prediction_result["logistic_regression_prediction"],
-        logistic_regression_confidence=prediction_result["logistic_regression_confidence"],
-        svm_prediction=prediction_result["svm_prediction"],
-        svm_confidence=prediction_result["svm_confidence"],
+    chat_record, _ = persist_chat_message(
+        db,
+        current_user,
+        room,
+        message_text,
+        data.client_message_id,
     )
-    db.add(chat_record)
-    db.commit()
-    db.refresh(chat_record)
-
-    warning_triggered = False
-    restriction_triggered = False
-    if prediction_result["status"] == "Toxic":
-        current_user.warning_count += 1
-        db.add(ModerationAction(
-            user_id=current_user.id,
-            action_type="WARNING",
-            reason=f"Toxic message: '{message_text}'",
-        ))
-        warning_triggered = True
-        db.add(current_user)
-        db.commit()
 
     result = serialize_chat_message(chat_record)
-    result["warning_triggered"] = warning_triggered
-    result["restriction_triggered"] = restriction_triggered
+    result["warning_triggered"] = chat_record.status == "Toxic"
+    result["restriction_triggered"] = False
     return result
 
 
@@ -328,6 +396,24 @@ async def websocket_chat_endpoint(
             )
             return
 
+        active_player = db.query(GameRoomPlayer).filter(
+            GameRoomPlayer.room_id == room_id,
+            GameRoomPlayer.user_id == user.id,
+            GameRoomPlayer.left_at == None,
+        ).first()
+        if not active_player:
+            logger.warning(
+                "WebSocket rejected: user is not an active room player "
+                "(username=%s, room_id=%s)",
+                user.username,
+                room_id,
+            )
+            await websocket.close(
+                code=status.WS_1008_POLICY_VIOLATION,
+                reason="You are not a player in this room",
+            )
+            return
+
         logger.info(
             f"WebSocket validated: "
             f"user={user.username}, room={room_id}"
@@ -455,8 +541,22 @@ async def websocket_chat_endpoint(
                 message_data.get("message", "")
                 .strip()
             )
+            client_message_id = message_data.get("client_message_id")
 
             if not message_text:
+                continue
+
+            if client_message_id is not None and (
+                not isinstance(client_message_id, str)
+                or len(client_message_id) > 64
+            ):
+                await websocket.send_json(
+                    {
+                        "type": "chat_error",
+                        "client_message_id": None,
+                        "message": "Invalid client message ID.",
+                    }
+                )
                 continue
 
             # =================================================
@@ -505,107 +605,65 @@ async def websocket_chat_endpoint(
                 f"user={user.username}, room={room_id}"
             )
 
-            prediction_result = predict_message(
-                message_text
-            )
-
-            status_label = prediction_result["status"]
-
-            # =================================================
-            # SAVE MESSAGE TO DATABASE
-            # =================================================
-
-            chat_record = ChatMessageDB(
-                user_id=user.id,
-                game_id=room.game_id,
-                room_id=room_id,
-                message=message_text,
-                prediction=prediction_result["prediction"],
-                status=status_label,
-                confidence=prediction_result["confidence"],
-                selected_model=prediction_result[
-                    "selected_model"
-                ],
-                logistic_regression_prediction=(
-                    prediction_result[
-                        "logistic_regression_prediction"
-                    ]
-                ),
-                logistic_regression_confidence=(
-                    prediction_result[
-                        "logistic_regression_confidence"
-                    ]
-                ),
-                svm_prediction=prediction_result[
-                    "svm_prediction"
-                ],
-                svm_confidence=prediction_result[
-                    "svm_confidence"
-                ],
-            )
-
-            db.add(chat_record)
-            db.commit()
-            db.refresh(chat_record)
-
-            # =================================================
-            # MODERATION VIOLATION CHECK
-            # =================================================
-
-            is_toxic = (
-                status_label == "Toxic"
-            )
-
-            warning_triggered = False
-            restriction_triggered = False
-
-            if is_toxic:
-
-                user.warning_count += 1
-
-                db.add(user)
-                db.commit()
-
-                mod_action = ModerationAction(
-                    user_id=user.id,
-                    action_type="WARNING",
-                    reason=f"Toxic message: '{message_text}'",
+            try:
+                existing_message = get_existing_chat_message(
+                    db,
+                    user,
+                    room,
+                    client_message_id,
                 )
-                db.add(mod_action)
-                db.add(user)
-                db.commit()
-                warning_triggered = True
-                logger.info(f"Warning issued to user={user.username}")
-            # =================================================
-            # BROADCAST CHAT MESSAGE
-            # =================================================
+                if existing_message:
+                    await websocket.send_json(
+                        {
+                            **serialize_chat_message(existing_message),
+                            "warning_triggered": (
+                                existing_message.status == "Toxic"
+                            ),
+                            "restriction_triggered": False,
+                        }
+                    )
+                    continue
 
-            await manager.broadcast_to_room(
-                room_id,
+                prediction_result = await run_in_threadpool(
+                    predict_message,
+                    message_text,
+                )
+                chat_record, created = persist_chat_message(
+                    db,
+                    user,
+                    room,
+                    message_text,
+                    client_message_id,
+                    prediction_result,
+                    check_existing=False,
+                )
+            except Exception:
+                db.rollback()
+                logger.exception(
+                    "Could not process chat message: room=%s user=%s",
+                    room_id,
+                    user.username,
+                )
+                await websocket.send_json(
+                    {
+                        "type": "chat_error",
+                        "client_message_id": client_message_id,
+                        "message": "Could not process chat message. Please retry.",
+                    }
+                )
+                continue
+
+            chat_event = serialize_chat_message(chat_record)
+            chat_event.update(
                 {
-                    "type": "chat",
-                    "id": chat_record.id,
-                    "user_id": user.id,
-                    "username": user.username,
-                    "message": message_text,
-                    "status": status_label,
-                    "prediction": prediction_result[
-                        "prediction"
-                    ],
-                    "confidence": prediction_result[
-                        "confidence"
-                    ],
-                    "warning_triggered": (
-                        warning_triggered
-                    ),
-                    "restriction_triggered": (
-                        restriction_triggered
-                    ),
-                    "timestamp": (
-                        chat_record.created_at.isoformat()
-                    ),
+                    "warning_triggered": chat_record.status == "Toxic",
+                    "restriction_triggered": False,
                 }
             )
+            if created:
+                await manager.broadcast_to_room(room_id, chat_event)
+            else:
+                await websocket.send_json(chat_event)
 
     # ========================================================
     # NORMAL DISCONNECT
@@ -681,13 +739,15 @@ async def websocket_chat_endpoint(
 @router.get("/rooms/{room_id}/chat")
 def get_room_chat_messages(
     room_id: int,
+    after_id: int = Query(0, ge=0),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_active_user),
 ):
     require_chat_room_access(room_id, current_user, db)
-    chats = db.query(ChatMessageDB).filter(
-        ChatMessageDB.room_id == room_id,
-    ).order_by(ChatMessageDB.created_at.asc()).all()
+    query = db.query(ChatMessageDB).filter(ChatMessageDB.room_id == room_id)
+    if after_id:
+        query = query.filter(ChatMessageDB.id > after_id)
+    chats = query.order_by(ChatMessageDB.id.asc()).all()
     return [serialize_chat_message(chat) for chat in chats]
 
 
@@ -738,6 +798,7 @@ def get_my_chat_history(
                 "prediction": c.prediction,
                 "status": c.status,
                 "confidence": c.confidence,
+                "confidence_is_calibrated": False,
                 "selected_model": c.selected_model,
                 "game_name": (
                     c.game.name
@@ -791,6 +852,7 @@ def get_room_chat_history(
                 "status": c.status,
                 "prediction": c.prediction,
                 "confidence": c.confidence,
+                "confidence_is_calibrated": False,
                 "timestamp": (
                     c.created_at.isoformat()
                 ),

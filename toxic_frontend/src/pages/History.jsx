@@ -70,7 +70,7 @@ export default function History() {
         <h1 style={styles.title}>Chat Audit</h1>
 
         <p style={styles.subtitle}>
-          Review your past messages, classifications, confidence levels, and safety status.
+          Review your past messages, classifications, model scores, and safety status.
         </p>
       </header>
 
@@ -141,7 +141,7 @@ export default function History() {
                 <th>Message Content</th>
                 <th>Classification</th>
                 <th>Status</th>
-                <th>Confidence</th>
+                <th>Model score (not probability)</th>
                 <th>Sent At</th>
               </tr>
             </thead>
@@ -181,7 +181,7 @@ export default function History() {
 
                   <td>
                     <span style={styles.modelSpan}>
-                      {item.confidence}%
+                      {item.confidence}/100
                     </span>
 
                     <span style={styles.modelSub}>

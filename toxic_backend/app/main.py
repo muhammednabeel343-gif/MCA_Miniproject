@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -11,6 +13,8 @@ from .routes.games import router as games_router
 from .routes.chat_ws import router as chat_ws_router
 from .routes.users import router as users_router
 from .routes.admin import router as admin_router
+
+logger = logging.getLogger("app.main")
 
 
 app = FastAPI(
@@ -35,7 +39,10 @@ app.add_middleware(
 
 @app.on_event("startup")
 def startup():
-    init_db()
+    try:
+        init_db()
+    except Exception as exc:
+        logger.warning(f"Startup database initialization skipped: {exc}")
 
 
 @app.get("/")

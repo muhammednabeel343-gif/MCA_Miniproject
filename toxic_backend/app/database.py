@@ -6,18 +6,34 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+DEFAULT_SQLITE_PATH = os.path.join(BASE_DIR, "toxic_backend", "local.db")
 
-if not DATABASE_URL:
-    raise ValueError("DATABASE_URL is not set in the .env file")
+
+def _resolve_database_url():
+    raw_database_url = os.getenv("DATABASE_URL", "").strip()
+
+    if not raw_database_url or "*" in raw_database_url:
+        return f"sqlite:///{DEFAULT_SQLITE_PATH}"
+
+    return raw_database_url
+
+
+DATABASE_URL = _resolve_database_url()
+engine_kwargs = {
+    "pool_pre_ping": True,
+    "pool_recycle": 300,
+    "pool_size": 5,
+    "max_overflow": 10,
+}
+
+if DATABASE_URL.startswith("sqlite"):
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
 
 
 engine = create_engine(
     DATABASE_URL,
-    pool_pre_ping=True,
-    pool_recycle=300,
-    pool_size=5,
-    max_overflow=10
+    **engine_kwargs
 )
 
 

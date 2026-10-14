@@ -51,6 +51,16 @@ CLASS_NAMES = {
     5: "Extremism",
 }
 
+EXPECTED_CLASSES = set(CLASS_NAMES)
+for model_name, model in (
+    ("Logistic Regression", lr_model),
+    ("Linear SVM", svm_model),
+):
+    if {int(label) for label in model.classes_} != EXPECTED_CLASSES:
+        raise ValueError(f"{model_name} artifact does not contain all six GameTox labels")
+    if model.n_features_in_ != len(vectorizer.vocabulary_):
+        raise ValueError(f"{model_name} artifact does not match the saved TF-IDF vectorizer")
+
 
 def display_prediction(label):
     return CLASS_NAMES[int(label)]
@@ -240,6 +250,7 @@ def safe_result(selected_model="Safe Message Rule"):
         "prediction": "Non-Toxic",
         "status": "Safe",
         "confidence": 100.0,
+        "confidence_is_calibrated": False,
         "selected_model": selected_model,
 
         "logistic_regression_prediction": "Not Evaluated",
@@ -309,52 +320,9 @@ def predict_message(message: str):
     svm_prediction = svm_model.classes_[svm_index]
     svm_confidence = float(svm_probabilities[svm_index])
 
-    # =================================================
-    # Ensemble probabilities
-    # =================================================
-    all_classes = sorted(
-        set(lr_model.classes_) |
-        set(svm_model.classes_)
-    )
-
-    ensemble_probabilities = {}
-
-    for class_name in all_classes:
-
-        lr_class_probability = 0.0
-        svm_class_probability = 0.0
-
-        if class_name in lr_model.classes_:
-
-            lr_class_index = list(
-                lr_model.classes_
-            ).index(class_name)
-
-            lr_class_probability = float(
-                lr_probabilities[lr_class_index]
-            )
-
-        if class_name in svm_model.classes_:
-
-            svm_class_index = list(
-                svm_model.classes_
-            ).index(class_name)
-
-            svm_class_probability = float(
-                svm_probabilities[svm_class_index]
-            )
-
-        ensemble_probabilities[class_name] = (
-            lr_class_probability +
-            svm_class_probability
-        ) / 2
-
-    final_prediction = max(
-        ensemble_probabilities,
-        key=ensemble_probabilities.get,
-    )
+    final_prediction = svm_prediction
     status = "Safe" if final_prediction == 0 else "Toxic"
-    final_confidence = ensemble_probabilities[final_prediction]
+    final_confidence = svm_confidence
 
     # =================================================
     # Return result
@@ -368,8 +336,9 @@ def predict_message(message: str):
             final_confidence * 100,
             2
         ),
+        "confidence_is_calibrated": False,
 
-        "selected_model": "Ensemble (LR + SVM)",
+        "selected_model": "Balanced Linear SVM, C=0.5 (uncalibrated score)",
 
         "logistic_regression_prediction": display_prediction(lr_prediction),
 
@@ -417,7 +386,7 @@ def clean_text(text: str):
 
     # Remove punctuation and special characters
     text = re.sub(
-        r"[^a-zA-Z0-9\s]",
+        r"[^\w\s]",
         " ",
         text
     )

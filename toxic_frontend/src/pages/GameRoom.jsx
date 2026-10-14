@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../config";
 import { authHeaders, getToken, getUser } from "../utils/auth";
@@ -21,7 +21,9 @@ export default function GameRoom() {
   const roomPollingTimerRef = useRef(null);
   const moveInFlightRef = useRef(false);
   const chatPollingTimerRef = useRef(null);
-  const chatMessageIdsRef = useRef(new Set());
+  const chatPollInFlightRef = useRef(new Set());
+  const chatLastMessageIdRef = useRef(0);
+  const sendingChatIdsRef = useRef(new Set());
   const [chatStatus, setChatStatus] = useState("connecting");
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -30,6 +32,11 @@ export default function GameRoom() {
 const socketRef = useRef(null);
 const messagesAreaRef = useRef(null);
 const warningTimerRef = useRef(null);
+const activeRoomIdRef = useRef(roomId);
+
+  useLayoutEffect(() => {
+    activeRoomIdRef.current = roomId;
+  }, [roomId]);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 1024);
@@ -44,6 +51,9 @@ const warningTimerRef = useRef(null);
     }
 
     let isActive = true;
+    chatLastMessageIdRef.current = 0;
+    setChatStatus("connecting");
+    setMessages([]);
 
     const initializeRoom = async () => {
       await fetchRoomData(isActive);
@@ -121,27 +131,37 @@ const warningTimerRef = useRef(null);
   const mergeChatMessages = (incoming = []) => {
     if (!incoming.length) return;
 
-    const deduped = incoming.filter((message) => {
-      if (message?.id == null) return true;
-      if (chatMessageIdsRef.current.has(message.id)) return false;
-      chatMessageIdsRef.current.add(message.id);
-      return true;
-    });
-
-    if (!deduped.length) return;
     setMessages((previous) => {
       const next = [...previous];
-      deduped.forEach((message) => {
-        const alreadyExists = next.some((existing) => existing.id && existing.id === message.id);
-        if (!alreadyExists) next.push(message);
+      incoming.forEach((message) => {
+        const existingIndex = next.findIndex((existing) => (
+          (message.client_message_id &&
+            existing.client_message_id === message.client_message_id) ||
+          (message.id != null && existing.id === message.id)
+        ));
+        if (existingIndex === -1) {
+          next.push(message);
+        } else {
+          next[existingIndex] = {
+            ...next[existingIndex],
+            ...message,
+            deliveryStatus: undefined,
+            deliveryError: undefined,
+          };
+        }
       });
       return next;
     });
   };
 
   const pollChat = async (isActive = true) => {
+    const pollingRoomId = String(roomId);
+    if (chatPollInFlightRef.current.has(pollingRoomId)) return;
+    chatPollInFlightRef.current.add(pollingRoomId);
     try {
-      const response = await fetch(`${API_BASE_URL}/rooms/${roomId}/chat`, {
+      const afterId = chatLastMessageIdRef.current;
+      const afterQuery = afterId ? `?after_id=${afterId}` : "";
+      const response = await fetch(`${API_BASE_URL}/rooms/${roomId}/chat${afterQuery}`, {
         headers: authHeaders(),
       });
       if (!response.ok) throw new Error("Could not load chat messages.");
@@ -149,6 +169,14 @@ const warningTimerRef = useRef(null);
       if (!isActive) return;
       setChatStatus("connected");
       mergeChatMessages(incoming);
+      incoming.forEach((message) => {
+        if (message?.id != null) {
+          chatLastMessageIdRef.current = Math.max(
+            chatLastMessageIdRef.current,
+            Number(message.id) || 0,
+          );
+        }
+      });
 
       const ownMessages = incoming.filter((message) => message.username === currentUser?.username);
       if (ownMessages.some((message) => message.warning_triggered)) {
@@ -159,45 +187,88 @@ const warningTimerRef = useRef(null);
         setChatStatus("error");
         console.error("Chat polling error:", err);
       }
+    } finally {
+      chatPollInFlightRef.current.delete(pollingRoomId);
+    }
+  };
+
+  const sendChatMessage = async (pendingMessage) => {
+    const { client_message_id: clientMessageId } = pendingMessage;
+    if (sendingChatIdsRef.current.has(clientMessageId)) return;
+    sendingChatIdsRef.current.add(clientMessageId);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/rooms/${roomId}/chat`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({
+          message: pendingMessage.message,
+          client_message_id: clientMessageId,
+        }),
+      });
+      if (!response.ok) {
+        const detail = await response.json().catch(() => ({}));
+        throw new Error(detail.detail || "Could not send chat message.");
+      }
+      const data = await response.json();
+      if (
+        !data ||
+        data.id == null ||
+        data.client_message_id !== clientMessageId
+      ) {
+        throw new Error("The server did not confirm this chat message.");
+      }
+      if (activeRoomIdRef.current !== roomId) return;
+      mergeChatMessages([data]);
+      if (data?.warning_triggered) {
+        setWarningMsg("Automated warning issued: Toxicity detected. Please keep the conversation friendly.");
+      }
+    } catch (err) {
+      if (activeRoomIdRef.current !== roomId) return;
+      setMessages((previous) => previous.map((message) => (
+        message.client_message_id === clientMessageId
+          ? {
+              ...message,
+              deliveryStatus: "failed",
+              deliveryError: err.message || "Could not send chat message.",
+            }
+          : message
+      )));
+    } finally {
+      sendingChatIdsRef.current.delete(clientMessageId);
     }
   };
 
   const handleSendChat = (e) => {
     e.preventDefault();
     const message = chatInput.trim();
-
     if (!message) return;
 
-    fetch(`${API_BASE_URL}/rooms/${roomId}/chat`, {
-      method: "POST",
-      headers: authHeaders(),
-      body: JSON.stringify({ message }),
-    })
-      .then(async (response) => {
-        if (!response.ok) {
-          const detail = await response.json().catch(() => ({}));
-          throw new Error(detail.detail || "Could not send chat message.");
-        }
-        return response.json();
-      })
-      .then((data) => {
-        if (data?.id != null) {
-          chatMessageIdsRef.current.add(data.id);
-        }
-        setMessages((previous) => {
-          const next = [...previous];
-          if (data?.id != null && next.some((item) => item.id && item.id === data.id)) {
-            return next;
-          }
-          if (data) next.push(data);
-          return next;
-        });
-        if (data.warning_triggered) {
-          setWarningMsg("Automated warning issued: Toxicity detected. Please keep the conversation friendly.");
-        }
-        setChatInput("");
-      })
-      .catch((err) => setWarningMsg(err.message));
+    const clientMessageId = typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `chat-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const pendingMessage = {
+      client_message_id: clientMessageId,
+      username: currentUser?.username || "You",
+      message,
+      timestamp: new Date().toISOString(),
+      deliveryStatus: "pending",
+    };
+    setMessages((previous) => [...previous, pendingMessage]);
+    setChatInput("");
+    sendChatMessage(pendingMessage);
+  };
+
+  const retryChatMessage = (message) => {
+    const retryMessage = {
+      ...message,
+      deliveryStatus: "pending",
+      deliveryError: undefined,
+    };
+    setMessages((previous) => previous.map((item) => (
+      item.client_message_id === message.client_message_id ? retryMessage : item
+    )));
+    sendChatMessage(retryMessage);
   };
 
   const sendGameMove = (updatedState) => {
@@ -382,7 +453,10 @@ const warningTimerRef = useRef(null);
 
         <div className="game-chat" style={styles.chatArea}>
           <div style={styles.chatHeader}>
-            <h3>Game Chat</h3>
+            <div>
+              <h3>Game Chat</h3>
+              <small style={styles.scoreNotice}>Scores are not calibrated probabilities.</small>
+            </div>
             <span
               style={{
                 ...styles.socketStatus,
@@ -409,11 +483,11 @@ const warningTimerRef = useRef(null);
       const isOwn = m.username === currentUser?.username;
       const isSystem = m.username === "System";
       const predictionText = m.prediction || (m.status === "Toxic" ? "Toxic" : "Non-Toxic");
-      const hasPrediction = !isSystem && (m.prediction || m.status);
+      const hasPrediction = !m.deliveryStatus && !isSystem && (m.prediction || m.status);
 
       return (
         <div
-          key={`${m.id ?? m.timestamp ?? index}-${index}`}
+          key={m.client_message_id ?? m.id ?? m.timestamp ?? index}
           style={{
             ...styles.messageRow,
             justifyContent: isOwn ? "flex-end" : "flex-start",
@@ -434,12 +508,27 @@ const warningTimerRef = useRef(null);
                   className={m.status === "Toxic" ? "badge badge-toxic" : "badge badge-safe"}
                   style={m.status === "Toxic" ? styles.toxicBadge : styles.safeBadge}
                 >
-                  {predictionText} ({Number.isFinite(Number(m.confidence)) ? Number(m.confidence).toFixed(0) : 0}%)
+                  {predictionText}
                 </span>
               )}
             </div>
 
             <p style={styles.msgText}>{m.message}</p>
+            {m.deliveryStatus === "pending" && (
+              <span style={styles.deliveryStatus}>Sending for moderation…</span>
+            )}
+            {m.deliveryStatus === "failed" && (
+              <div style={styles.deliveryStatus}>
+                <span>Not sent: {m.deliveryError}</span>
+                <button
+                  type="button"
+                  onClick={() => retryChatMessage(m)}
+                  style={styles.retryChatButton}
+                >
+                  Retry
+                </button>
+              </div>
+            )}
           </div>
         </div>
       );
@@ -1076,6 +1165,9 @@ const styles = {
   msgUser:{fontSize:"12px",fontWeight:"700",color:"var(--text-h)"},
   toxicBadge:{fontSize:"10px"},
   msgText:{margin:0,fontSize:"14px",wordBreak:"break-word"},
+  scoreNotice:{fontSize:"11px",color:"var(--text)"},
+  deliveryStatus:{display:"flex",alignItems:"center",gap:"8px",marginTop:"6px",fontSize:"12px",color:"var(--text)"},
+  retryChatButton:{padding:"2px 7px",fontSize:"11px"},
   chatForm:{display:"flex",gap:"10px",padding:"14px",borderTop:"1px solid var(--border)"},
   chatInput:{flex:1,minWidth:0},
   sendBtn:{padding:"10px 16px"},

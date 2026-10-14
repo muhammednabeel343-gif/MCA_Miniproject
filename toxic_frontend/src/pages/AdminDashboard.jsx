@@ -345,7 +345,7 @@ const AdminDashboard = () => {
                       <th>User</th>
                       <th>Message</th>
                       <th>Category</th>
-                      <th>Confidence</th>
+                      <th>Model score (not probability)</th>
                       <th>Date</th>
                     </tr>
                   </thead>
@@ -355,7 +355,7 @@ const AdminDashboard = () => {
                         <td style={{ fontWeight: 600 }}>{f.username}</td>
                         <td style={{ fontStyle: "italic", color: "var(--status-toxic)" }}>{f.message}</td>
                         <td><span className="badge badge-toxic">{f.prediction}</span></td>
-                        <td>{f.confidence}%</td>
+                        <td>{f.confidence}/100</td>
                         <td>{f.created_at ? new Date(f.created_at).toLocaleString() : "-"}</td>
                       </tr>
                     ))}
@@ -512,7 +512,7 @@ const AdminDashboard = () => {
               {selectedUserDetails.chat_history.map(c=> (
                 <div key={c.id} style={{borderBottom:'1px solid var(--border)', padding:'6px 0'}}>
                   <div style={{fontStyle:'italic'}}>{c.message}</div>
-                  <div style={{fontSize:12, color:'var(--text)'}}>{c.prediction} — {c.confidence}%</div>
+                  <div style={{fontSize:12, color:'var(--text)'}}>{c.prediction} — score {c.confidence}/100</div>
                 </div>
               ))}
             </div>
@@ -555,7 +555,7 @@ const AdminDashboard = () => {
                   <th>Room</th>
                   <th>Message</th>
                   <th>Category</th>
-                  <th>Model / Confidence</th>
+                  <th>Model / Score (not probability)</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -573,7 +573,7 @@ const AdminDashboard = () => {
                       <span className="badge badge-toxic">{f.prediction}</span>
                     </td>
                     <td>
-                      <div style={{fontWeight:600}}>{f.confidence}%</div>
+                      <div style={{fontWeight:600}}>{f.confidence}/100</div>
                       <div style={{fontSize:12, color:'var(--text)'}}>{f.selected_model}</div>
                     </td>
                     <td>

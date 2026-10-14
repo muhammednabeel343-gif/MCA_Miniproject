@@ -1,0 +1,417 @@
+{
+  "source": "dataset\\train.csv",
+  "source_rows": 42959,
+  "label_mapping": {
+    "0": "Non-Toxic",
+    "1": "Insults & Flaming",
+    "2": "Other Offensive Texts",
+    "3": "Hate & Harassment",
+    "4": "Threats",
+    "5": "Extremism"
+  },
+  "source_class_counts": {
+    "0": 34797,
+    "1": 5925,
+    "2": 1874,
+    "3": 279,
+    "4": 60,
+    "5": 24
+  },
+  "exact_full_row_duplicate_rows": 0,
+  "repeated_message_label_rows": 14418,
+  "normalized_text_groups": 26669,
+  "normalized_duplicate_groups": 2610,
+  "rows_in_normalized_duplicate_groups": 18900,
+  "empty_normalized_rows": 605,
+  "conflicting_label_group_count": 337,
+  "rows_in_conflicting_label_groups": 7461,
+  "conflicting_groups_including_empty_text": 1,
+  "conflicting_group_examples": [
+    {
+      "normalized_text": "",
+      "row_count": 605,
+      "labels": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "examples": [
+        {
+          "source_row": 107,
+          "message": ":(",
+          "label": 0,
+          "label_name": "Non-Toxic"
+        },
+        {
+          "source_row": 145,
+          "message": ":'(",
+          "label": 0,
+          "label_name": "Non-Toxic"
+        },
+        {
+          "source_row": 174,
+          "message": ":|",
+          "label": 0,
+          "label_name": "Non-Toxic"
+        },
+        {
+          "source_row": 175,
+          "message": ":-)",
+          "label": 0,
+          "label_name": "Non-Toxic"
+        },
+        {
+          "source_row": 263,
+          "message": "?",
+          "label": 0,
+          "label_name": "Non-Toxic"
+        },
+        {
+          "source_row": 326,
+          "message": "?",
+          "label": 0,
+          "label_name": "Non-Toxic"
+        },
+        {
+          "source_row": 332,
+          "message": "?",
+          "label": 0,
+          "label_name": "Non-Toxic"
+        },
+        {
+          "source_row": 376,
+          "message": ":)",
+          "label": 1,
+          "label_name": "Insults & Flaming"
+        }
+      ]
+    },
+    {
+      "normalized_text": "0 help",
+      "row_count": 3,
+      "labels": [
+        0,
+        2
+      ],
+      "examples": [
+        {
+          "source_row": 5527,
+          "message": "0 help",
+          "label": 2,
+          "label_name": "Other Offensive Texts"
+        },
+        {
+          "source_row": 27405,
+          "message": "0 help",
+          "label": 0,
+          "label_name": "Non-Toxic"
+        },
+        {
+          "source_row": 28071,
+          "message": "0 help",
+          "label": 2,
+          "label_name": "Other Offensive Texts"
+        }
+      ]
+    },
+    {
+      "normalized_text": "121",
+      "row_count": 6,
+      "labels": [
+        0,
+        2
+      ],
+      "examples": [
+        {
+          "source_row": 6298,
+          "message": "121",
+          "label": 0,
+          "label_name": "Non-Toxic"
+        },
+        {
+          "source_row": 7827,
+          "message": "121",
+          "label": 0,
+          "label_name": "Non-Toxic"
+        },
+        {
+          "source_row": 10660,
+          "message": "121",
+          "label": 0,
+          "label_name": "Non-Toxic"
+        },
+        {
+          "source_row": 28332,
+          "message": "121??????????????",
+          "label": 2,
+          "label_name": "Other Offensive Texts"
+        },
+        {
+          "source_row": 34036,
+          "message": "121????????????????????",
+          "label": 0,
+          "label_name": "Non-Toxic"
+        },
+        {
+          "source_row": 39381,
+          "message": "121",
+          "label": 0,
+          "label_name": "Non-Toxic"
+        }
+      ]
+    },
+    {
+      "normalized_text": "283 уеб отсюда",
+      "row_count": 2,
+      "labels": [
+        0,
+        1
+      ],
+      "examples": [
+        {
+          "source_row": 5049,
+          "message": "283 уеб отсюда",
+          "label": 0,
+          "label_name": "Non-Toxic"
+        },
+        {
+          "source_row": 14592,
+          "message": "283 уеб отсюда",
+          "label": 1,
+          "label_name": "Insults & Flaming"
+        }
+      ]
+    },
+    {
+      "normalized_text": "5k dmg",
+      "row_count": 2,
+      "labels": [
+        0,
+        1
+      ],
+      "examples": [
+        {
+          "source_row": 15771,
+          "message": "5k dmg",
+          "label": 1,
+          "label_name": "Insults & Flaming"
+        },
+        {
+          "source_row": 22596,
+          "message": "5k dmg",
+          "label": 0,
+          "label_name": "Non-Toxic"
+        }
+      ]
+    },
+    {
+      "normalized_text": "a",
+      "row_count": 12,
+      "labels": [
+        0,
+        1
+      ],
+      "examples": [
+        {
+          "source_row": 6876,
+          "message": "a",
+          "label": 0,
+          "label_name": "Non-Toxic"
+        },
+        {
+          "source_row": 7363,
+          "message": "A",
+          "label": 0,
+          "label_name": "Non-Toxic"
+        },
+        {
+          "source_row": 7370,
+          "message": "a",
+          "label": 0,
+          "label_name": "Non-Toxic"
+        },
+        {
+          "source_row": 9725,
+          "message": "awwwwwwww",
+          "label": 0,
+          "label_name": "Non-Toxic"
+        },
+        {
+          "source_row": 16252,
+          "message": "a",
+          "label": 0,
+          "label_name": "Non-Toxic"
+        },
+        {
+          "source_row": 21390,
+          "message": "A****",
+          "label": 1,
+          "label_name": "Insults & Flaming"
+        },
+        {
+          "source_row": 26455,
+          "message": "a",
+          "label": 0,
+          "label_name": "Non-Toxic"
+        },
+        {
+          "source_row": 30418,
+          "message": "a",
+          "label": 0,
+          "label_name": "Non-Toxic"
+        }
+      ]
+    },
+    {
+      "normalized_text": "afk",
+      "row_count": 22,
+      "labels": [
+        0,
+        2
+      ],
+      "examples": [
+        {
+          "source_row": 253,
+          "message": "afk",
+          "label": 2,
+          "label_name": "Other Offensive Texts"
+        },
+        {
+          "source_row": 1863,
+          "message": "afk",
+          "label": 2,
+          "label_name": "Other Offensive Texts"
+        },
+        {
+          "source_row": 2267,
+          "message": "afk",
+          "label": 2,
+          "label_name": "Other Offensive Texts"
+        },
+        {
+          "source_row": 2574,
+          "message": "afk",
+          "label": 2,
+          "label_name": "Other Offensive Texts"
+        },
+        {
+          "source_row": 2809,
+          "message": "afk",
+          "label": 2,
+          "label_name": "Other Offensive Texts"
+        },
+        {
+          "source_row": 7566,
+          "message": "afk",
+          "label": 0,
+          "label_name": "Non-Toxic"
+        },
+        {
+          "source_row": 8811,
+          "message": "afk",
+          "label": 0,
+          "label_name": "Non-Toxic"
+        },
+        {
+          "source_row": 11510,
+          "message": "afk",
+          "label": 0,
+          "label_name": "Non-Toxic"
+        }
+      ]
+    },
+    {
+      "normalized_text": "all 9 tiers are camping like good polish do",
+      "row_count": 2,
+      "labels": [
+        0,
+        1
+      ],
+      "examples": [
+        {
+          "source_row": 8125,
+          "message": "all 9 tiers are camping like good polish do",
+          "label": 1,
+          "label_name": "Insults & Flaming"
+        },
+        {
+          "source_row": 32022,
+          "message": "all 9 tiers are camping like good polish do",
+          "label": 0,
+          "label_name": "Non-Toxic"
+        }
+      ]
+    },
+    {
+      "normalized_text": "are you blind",
+      "row_count": 6,
+      "labels": [
+        0,
+        1
+      ],
+      "examples": [
+        {
+          "source_row": 9224,
+          "message": "Are you blind?!",
+          "label": 0,
+          "label_name": "Non-Toxic"
+        },
+        {
+          "source_row": 13318,
+          "message": "are you blind??",
+          "label": 1,
+          "label_name": "Insults & Flaming"
+        },
+        {
+          "source_row": 15898,
+          "message": "are you blind?",
+          "label": 1,
+          "label_name": "Insults & Flaming"
+        },
+        {
+          "source_row": 16475,
+          "message": "are you blind??",
+          "label": 1,
+          "label_name": "Insults & Flaming"
+        },
+        {
+          "source_row": 21735,
+          "message": "are you blind",
+          "label": 1,
+          "label_name": "Insults & Flaming"
+        },
+        {
+          "source_row": 31015,
+          "message": "are you blind???",
+          "label": 1,
+          "label_name": "Insults & Flaming"
+        }
+      ]
+    },
+    {
+      "normalized_text": "are you stupid",
+      "row_count": 2,
+      "labels": [
+        0,
+        1
+      ],
+      "examples": [
+        {
+          "source_row": 12275,
+          "message": "are you stupid",
+          "label": 1,
+          "label_name": "Insults & Flaming"
+        },
+        {
+          "source_row": 41673,
+          "message": "are you stupid?",
+          "label": 0,
+          "label_name": "Non-Toxic"
+        }
+      ]
+    }
+  ],
+  "conflict_policy": "Keep every original row and label unchanged; assign all rows sharing normalized text to one partition. Conflicting groups are neither relabeled nor removed. Empty normalized rows are excluded from both model fitting and evaluation, but counted and reported here.",
+  "empty_text_policy": "Exclude rows whose project-preprocessed normalized text is empty from both the train/test split and all model fitting/evaluation. Do not alter the source dataset."
+}

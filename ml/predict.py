@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-from backend.app.services.model_service import predict_message
+from toxic_backend.app.services.model_service import predict_message
 
 router = APIRouter()
 

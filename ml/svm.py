@@ -33,7 +33,11 @@ print("Testing TF-IDF shape:", X_test_tfidf.shape)
 
 
 # Create Linear SVM model
-model = LinearSVC(random_state=42)
+model = LinearSVC(
+    class_weight="balanced",
+    C=0.5,
+    random_state=42,
+)
 
 # Train the model
 print("\nTraining SVM...")

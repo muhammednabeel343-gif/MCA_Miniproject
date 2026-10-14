@@ -1,7 +1,7 @@
 import logging
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 from .database import engine, Base
-from .models import Game, User
+from .models import ChatMessage, Game, User
 from .services.auth import hash_password
 
 logging.basicConfig(level=logging.INFO)
@@ -11,29 +11,44 @@ logger = logging.getLogger("db_init")
 def init_db():
     logger.info("Initializing database...")
 
-    # 1. Update/alter chat_messages table if it already exists
-    with engine.connect() as conn:
-        logger.info("Checking chat_messages table for columns...")
-        # We can add columns safely with ALTER TABLE ADD COLUMN IF NOT EXISTS
-        alter_queries = [
-            "ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE SET NULL;",
-            "ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS game_id INTEGER REFERENCES games(id) ON DELETE SET NULL;",
-            "ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS room_id INTEGER REFERENCES game_rooms(id) ON DELETE SET NULL;",
-            "ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS logistic_regression_prediction VARCHAR;",
-            "ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS logistic_regression_confidence FLOAT;",
-            "ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS svm_prediction VARCHAR;",
-            "ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS svm_confidence FLOAT;"
-        ]
-        for query in alter_queries:
+    try:
+        with engine.connect() as conn:
+            logger.info("Checking chat_messages table for columns...")
             try:
-                conn.execute(text(query))
-                conn.commit()
-            except Exception as e:
-                logger.error(f"Error executing alter query: {query}. Error: {e}")
+                inspector = inspect(conn)
+                if inspector.has_table("chat_messages"):
+                    column_names = {column["name"] for column in inspector.get_columns("chat_messages")}
+                    if "user_id" not in column_names:
+                        conn.execute(text("ALTER TABLE chat_messages ADD COLUMN user_id INTEGER"))
+                    if "game_id" not in column_names:
+                        conn.execute(text("ALTER TABLE chat_messages ADD COLUMN game_id INTEGER"))
+                    if "room_id" not in column_names:
+                        conn.execute(text("ALTER TABLE chat_messages ADD COLUMN room_id INTEGER"))
+                    if "client_message_id" not in column_names:
+                        conn.execute(text("ALTER TABLE chat_messages ADD COLUMN client_message_id VARCHAR(64)"))
+                    if "logistic_regression_prediction" not in column_names:
+                        conn.execute(text("ALTER TABLE chat_messages ADD COLUMN logistic_regression_prediction VARCHAR"))
+                    if "logistic_regression_confidence" not in column_names:
+                        conn.execute(text("ALTER TABLE chat_messages ADD COLUMN logistic_regression_confidence FLOAT"))
+                    if "svm_prediction" not in column_names:
+                        conn.execute(text("ALTER TABLE chat_messages ADD COLUMN svm_prediction VARCHAR"))
+                    if "svm_confidence" not in column_names:
+                        conn.execute(text("ALTER TABLE chat_messages ADD COLUMN svm_confidence FLOAT"))
+                    conn.commit()
+            except Exception as exc:
+                logger.warning(f"Could not upgrade chat_messages schema: {exc}")
+    except Exception as exc:
+        logger.warning(f"Database connection not available during startup; continuing with SQLite fallback or in-memory mode: {exc}")
 
     # 2. Create other tables
     logger.info("Creating remaining tables...")
-    Base.metadata.create_all(bind=engine)
+    try:
+        Base.metadata.create_all(bind=engine)
+        for index in ChatMessage.__table__.indexes:
+            if index.name == "uq_chat_messages_user_room_client_id":
+                index.create(bind=engine, checkfirst=True)
+    except Exception as exc:
+        logger.warning(f"Could not create database tables: {exc}")
 
     # 3. Seed games and users
     from .database import SessionLocal

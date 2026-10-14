@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
-from app.models import ModerationAction, User
+from ..models import ModerationAction, User
 
 
 def utc_now() -> datetime:

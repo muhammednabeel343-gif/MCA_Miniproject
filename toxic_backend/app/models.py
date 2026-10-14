@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, ForeignKey, JSON
+from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, ForeignKey, JSON, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -96,11 +96,21 @@ class GameRoomState(Base):
 
 class ChatMessage(Base):
     __tablename__ = "chat_messages"
+    __table_args__ = (
+        Index(
+            "uq_chat_messages_user_room_client_id",
+            "user_id",
+            "room_id",
+            "client_message_id",
+            unique=True,
+        ),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     game_id = Column(Integer, ForeignKey("games.id"), nullable=True)
     room_id = Column(Integer, ForeignKey("game_rooms.id"), nullable=True)
+    client_message_id = Column(String(64), nullable=True)
 
     message = Column(String, nullable=False)
     prediction = Column(String, nullable=False)
