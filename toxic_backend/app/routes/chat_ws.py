@@ -55,6 +55,7 @@ def require_chat_room_access(room_id: int, user: User, db: Session):
 
 
 def serialize_chat_message(chat_record):
+    selected_model = getattr(chat_record, "selected_model", "")
     return {
         "type": "chat",
         "id": chat_record.id,
@@ -68,6 +69,12 @@ def serialize_chat_message(chat_record):
         "restriction_triggered": False,
         "confidence": chat_record.confidence,
         "confidence_is_calibrated": False,
+        "confidence_type": (
+            "uncalibrated absolute Linear SVM decision margin; not a probability"
+            if selected_model == "linear_svm"
+            else "uncalibrated score"
+        ),
+        "selected_model": selected_model,
         "timestamp": chat_record.created_at.isoformat(),
     }
 
@@ -800,6 +807,11 @@ def get_my_chat_history(
                 "confidence": c.confidence,
                 "confidence_is_calibrated": False,
                 "selected_model": c.selected_model,
+                "confidence_type": (
+                    "uncalibrated absolute Linear SVM decision margin; not a probability"
+                    if getattr(c, "selected_model", "") == "linear_svm"
+                    else "uncalibrated score"
+                ),
                 "game_name": (
                     c.game.name
                     if c.game
@@ -853,6 +865,12 @@ def get_room_chat_history(
                 "prediction": c.prediction,
                 "confidence": c.confidence,
                 "confidence_is_calibrated": False,
+                "selected_model": c.selected_model,
+                "confidence_type": (
+                    "uncalibrated absolute Linear SVM decision margin; not a probability"
+                    if getattr(c, "selected_model", "") == "linear_svm"
+                    else "uncalibrated score"
+                ),
                 "timestamp": (
                     c.created_at.isoformat()
                 ),

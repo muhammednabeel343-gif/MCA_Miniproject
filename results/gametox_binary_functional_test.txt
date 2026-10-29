@@ -1,0 +1,229 @@
+
+===========================================================================
+TURN 1 | Alex
+Message: Hey bro, ready for another match?
+Expected: Non-Toxic
+---------------------------------------------------------------------------
+Logistic Regression: Non-Toxic | Score: 70.3922 uncalibrated Logistic Regression score (%)
+SVM: Non-Toxic | Score: 0.6425 uncalibrated absolute decision margin; not a probability
+---------------------------------------------------------------------------
+FINAL PREDICTION: Non-Toxic | Status: Non-Toxic | Score: 0.6425 uncalibrated absolute Linear SVM decision margin; not a probability | Selected model: linear_svm
+Functional test: MATCH
+
+===========================================================================
+TURN 2 | Sam
+Message: Yeah, let's play together and have some fun.
+Expected: Non-Toxic
+---------------------------------------------------------------------------
+Logistic Regression: Non-Toxic | Score: 84.5667 uncalibrated Logistic Regression score (%)
+SVM: Non-Toxic | Score: 1.0204 uncalibrated absolute decision margin; not a probability
+---------------------------------------------------------------------------
+FINAL PREDICTION: Non-Toxic | Status: Non-Toxic | Score: 1.0204 uncalibrated absolute Linear SVM decision margin; not a probability | Selected model: linear_svm
+Functional test: MATCH
+
+===========================================================================
+TURN 3 | Alex
+Message: Nice teamwork in the last round, well played!
+Expected: Non-Toxic
+---------------------------------------------------------------------------
+Logistic Regression: Non-Toxic | Score: 88.4878 uncalibrated Logistic Regression score (%)
+SVM: Non-Toxic | Score: 1.1146 uncalibrated absolute decision margin; not a probability
+---------------------------------------------------------------------------
+FINAL PREDICTION: Non-Toxic | Status: Non-Toxic | Score: 1.1146 uncalibrated absolute Linear SVM decision margin; not a probability | Selected model: linear_svm
+Functional test: MATCH
+
+===========================================================================
+TURN 4 | Sam
+Message: Thanks bro, let's try to win this one too.
+Expected: Non-Toxic
+---------------------------------------------------------------------------
+Logistic Regression: Non-Toxic | Score: 92.5158 uncalibrated Logistic Regression score (%)
+SVM: Non-Toxic | Score: 1.1423 uncalibrated absolute decision margin; not a probability
+---------------------------------------------------------------------------
+FINAL PREDICTION: Non-Toxic | Status: Non-Toxic | Score: 1.1423 uncalibrated absolute Linear SVM decision margin; not a probability | Selected model: linear_svm
+Functional test: MATCH
+
+===========================================================================
+TURN 5 | Alex
+Message: I will kill it in this game!
+Expected: Non-Toxic
+---------------------------------------------------------------------------
+Logistic Regression: Non-Toxic | Score: 62.3082 uncalibrated Logistic Regression score (%)
+SVM: Non-Toxic | Score: 0.7215 uncalibrated absolute decision margin; not a probability
+---------------------------------------------------------------------------
+FINAL PREDICTION: Non-Toxic | Status: Non-Toxic | Score: 0.7215 uncalibrated absolute Linear SVM decision margin; not a probability | Selected model: linear_svm
+Functional test: MATCH
+
+===========================================================================
+TURN 6 | Sam
+Message: That was a stupid move, why did you do that?
+Expected: Toxic
+---------------------------------------------------------------------------
+Logistic Regression: Toxic | Score: 57.5461 uncalibrated Logistic Regression score (%)
+SVM: Non-Toxic | Score: 0.3433 uncalibrated absolute decision margin; not a probability
+---------------------------------------------------------------------------
+FINAL PREDICTION: Non-Toxic | Status: Non-Toxic | Score: 0.3433 uncalibrated absolute Linear SVM decision margin; not a probability | Selected model: linear_svm
+Functional test: MISMATCH
+
+===========================================================================
+TURN 7 | Alex
+Message: Stop blaming me, you are a fool.
+Expected: Toxic
+---------------------------------------------------------------------------
+Logistic Regression: Toxic | Score: 83.9617 uncalibrated Logistic Regression score (%)
+SVM: Toxic | Score: 0.5415 uncalibrated absolute decision margin; not a probability
+---------------------------------------------------------------------------
+FINAL PREDICTION: Toxic | Status: Toxic | Score: 0.5415 uncalibrated absolute Linear SVM decision margin; not a probability | Selected model: linear_svm
+Functional test: MATCH
+
+===========================================================================
+TURN 8 | Sam
+Message: You are terrible at this game.
+Expected: Toxic
+---------------------------------------------------------------------------
+Logistic Regression: Toxic | Score: 90.6399 uncalibrated Logistic Regression score (%)
+SVM: Toxic | Score: 0.7309 uncalibrated absolute decision margin; not a probability
+---------------------------------------------------------------------------
+FINAL PREDICTION: Toxic | Status: Toxic | Score: 0.7309 uncalibrated absolute Linear SVM decision margin; not a probability | Selected model: linear_svm
+Functional test: MATCH
+
+===========================================================================
+TURN 9 | Alex
+Message: Fuck you, you ruined the whole match.
+Expected: Toxic
+---------------------------------------------------------------------------
+Logistic Regression: Toxic | Score: 96.5682 uncalibrated Logistic Regression score (%)
+SVM: Toxic | Score: 0.9344 uncalibrated absolute decision margin; not a probability
+---------------------------------------------------------------------------
+FINAL PREDICTION: Toxic | Status: Toxic | Score: 0.9344 uncalibrated absolute Linear SVM decision margin; not a probability | Selected model: linear_svm
+Functional test: MATCH
+
+===========================================================================
+TURN 10 | Sam
+Message: Shut up and stop talking nonsense.
+Expected: Toxic
+---------------------------------------------------------------------------
+Logistic Regression: Toxic | Score: 88.6392 uncalibrated Logistic Regression score (%)
+SVM: Toxic | Score: 0.4508 uncalibrated absolute decision margin; not a probability
+---------------------------------------------------------------------------
+FINAL PREDICTION: Toxic | Status: Toxic | Score: 0.4508 uncalibrated absolute Linear SVM decision margin; not a probability | Selected model: linear_svm
+Functional test: MATCH
+
+===========================================================================
+TURN 11 | Alex
+Message: People like you do not belong in our team.
+Expected: Toxic
+---------------------------------------------------------------------------
+Logistic Regression: Toxic | Score: 67.1596 uncalibrated Logistic Regression score (%)
+SVM: Non-Toxic | Score: 0.4365 uncalibrated absolute decision margin; not a probability
+---------------------------------------------------------------------------
+FINAL PREDICTION: Non-Toxic | Status: Non-Toxic | Score: 0.4365 uncalibrated absolute Linear SVM decision margin; not a probability | Selected model: linear_svm
+Functional test: MISMATCH
+
+===========================================================================
+TURN 12 | Sam
+Message: Everyone should target and harass that player.
+Expected: Toxic
+---------------------------------------------------------------------------
+Logistic Regression: Non-Toxic | Score: 65.8773 uncalibrated Logistic Regression score (%)
+SVM: Non-Toxic | Score: 0.7661 uncalibrated absolute decision margin; not a probability
+---------------------------------------------------------------------------
+FINAL PREDICTION: Non-Toxic | Status: Non-Toxic | Score: 0.7661 uncalibrated absolute Linear SVM decision margin; not a probability | Selected model: linear_svm
+Functional test: MISMATCH
+
+===========================================================================
+TURN 13 | Alex
+Message: You are not welcome in this community.
+Expected: Toxic
+---------------------------------------------------------------------------
+Logistic Regression: Toxic | Score: 51.288 uncalibrated Logistic Regression score (%)
+SVM: Non-Toxic | Score: 0.6242 uncalibrated absolute decision margin; not a probability
+---------------------------------------------------------------------------
+FINAL PREDICTION: Non-Toxic | Status: Non-Toxic | Score: 0.6242 uncalibrated absolute Linear SVM decision margin; not a probability | Selected model: linear_svm
+Functional test: MISMATCH
+
+===========================================================================
+TURN 14 | Sam
+Message: Let's make sure nobody wants to play with you again.
+Expected: Toxic
+---------------------------------------------------------------------------
+Logistic Regression: Toxic | Score: 64.7762 uncalibrated Logistic Regression score (%)
+SVM: Non-Toxic | Score: 0.2462 uncalibrated absolute decision margin; not a probability
+---------------------------------------------------------------------------
+FINAL PREDICTION: Non-Toxic | Status: Non-Toxic | Score: 0.2462 uncalibrated absolute Linear SVM decision margin; not a probability | Selected model: linear_svm
+Functional test: MISMATCH
+
+===========================================================================
+TURN 15 | Alex
+Message: I will hurt you if you keep doing this.
+Expected: Toxic
+---------------------------------------------------------------------------
+Logistic Regression: Toxic | Score: 61.4905 uncalibrated Logistic Regression score (%)
+SVM: Non-Toxic | Score: 0.3266 uncalibrated absolute decision margin; not a probability
+---------------------------------------------------------------------------
+FINAL PREDICTION: Non-Toxic | Status: Non-Toxic | Score: 0.3266 uncalibrated absolute Linear SVM decision margin; not a probability | Selected model: linear_svm
+Functional test: MISMATCH
+
+===========================================================================
+TURN 16 | Sam
+Message: You will regret this, I will get you.
+Expected: Toxic
+---------------------------------------------------------------------------
+Logistic Regression: Toxic | Score: 50.7111 uncalibrated Logistic Regression score (%)
+SVM: Non-Toxic | Score: 0.5066 uncalibrated absolute decision margin; not a probability
+---------------------------------------------------------------------------
+FINAL PREDICTION: Non-Toxic | Status: Non-Toxic | Score: 0.5066 uncalibrated absolute Linear SVM decision margin; not a probability | Selected model: linear_svm
+Functional test: MISMATCH
+
+===========================================================================
+TURN 17 | Alex
+Message: I will find you and make you pay for this.
+Expected: Toxic
+---------------------------------------------------------------------------
+Logistic Regression: Non-Toxic | Score: 55.4213 uncalibrated Logistic Regression score (%)
+SVM: Non-Toxic | Score: 0.68 uncalibrated absolute decision margin; not a probability
+---------------------------------------------------------------------------
+FINAL PREDICTION: Non-Toxic | Status: Non-Toxic | Score: 0.68 uncalibrated absolute Linear SVM decision margin; not a probability | Selected model: linear_svm
+Functional test: MISMATCH
+
+===========================================================================
+TURN 18 | Sam
+Message: Violence is necessary to achieve extremist goals.
+Expected: Toxic
+---------------------------------------------------------------------------
+Logistic Regression: Toxic | Score: 56.816 uncalibrated Logistic Regression score (%)
+SVM: Non-Toxic | Score: 0.5396 uncalibrated absolute decision margin; not a probability
+---------------------------------------------------------------------------
+FINAL PREDICTION: Non-Toxic | Status: Non-Toxic | Score: 0.5396 uncalibrated absolute Linear SVM decision margin; not a probability | Selected model: linear_svm
+Functional test: MISMATCH
+
+===========================================================================
+TURN 19 | Alex
+Message: Our extremist movement wants to spread its ideology.
+Expected: Toxic
+---------------------------------------------------------------------------
+Logistic Regression: Non-Toxic | Score: 52.3817 uncalibrated Logistic Regression score (%)
+SVM: Non-Toxic | Score: 0.6745 uncalibrated absolute decision margin; not a probability
+---------------------------------------------------------------------------
+FINAL PREDICTION: Non-Toxic | Status: Non-Toxic | Score: 0.6745 uncalibrated absolute Linear SVM decision margin; not a probability | Selected model: linear_svm
+Functional test: MISMATCH
+
+===========================================================================
+TURN 20 | Sam
+Message: Support the use of violence for extremist causes.
+Expected: Toxic
+---------------------------------------------------------------------------
+Logistic Regression: Non-Toxic | Score: 52.9946 uncalibrated Logistic Regression score (%)
+SVM: Non-Toxic | Score: 0.6807 uncalibrated absolute decision margin; not a probability
+---------------------------------------------------------------------------
+FINAL PREDICTION: Non-Toxic | Status: Non-Toxic | Score: 0.6807 uncalibrated absolute Linear SVM decision margin; not a probability | Selected model: linear_svm
+Functional test: MISMATCH
+
+===========================================================================
+Functional matches: 9/20
+Functional match rate: 45.00%
+
+IMPORTANT:
+These are manually selected test messages.
+The match rate is NOT the model's test-set accuracy.
+Ambiguous messages may reasonably receive different labels.

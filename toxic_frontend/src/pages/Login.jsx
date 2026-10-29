@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { API_BASE_URL } from "../config";
 import { setToken, setUser } from "../utils/auth";
@@ -7,19 +7,13 @@ import { ShieldMark } from "./Landing";
 // Keep authentication logic unchanged, only restyle the page for gaming feel
 
 export default function Login() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
-  const [info, setInfo] = useState(null);
+  const [info, setInfo] = useState(() => location.state?.message || null);
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  useEffect(() => {
-    if (location.state && location.state.message) {
-      setInfo(location.state.message);
-    }
-  }, [location]);
 
   const handleLogin = async (e) => {
     e.preventDefault();

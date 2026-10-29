@@ -62,6 +62,7 @@ def get_user_stats(
             "status": m.status,
             "prediction": m.prediction,
             "confidence": m.confidence,
+            "selected_model": m.selected_model,
             "game_name": m.game.name if m.game else None,
             "created_at": m.created_at
         })

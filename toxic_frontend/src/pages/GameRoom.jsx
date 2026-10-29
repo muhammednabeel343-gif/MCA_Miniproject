@@ -1,7 +1,8 @@
-import { useState, useEffect, useLayoutEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../config";
 import { authHeaders, getToken, getUser } from "../utils/auth";
+import { getPredictionLabel } from "../utils/modelScore";
 import { Chess } from "chess.js";
 
 export default function GameRoom() {
@@ -45,7 +46,112 @@ const activeRoomIdRef = useRef(roomId);
   }, []);
 
   useEffect(() => {
-    if (!currentUser || !token) {
+    const messagesArea = messagesAreaRef.current;
+    if (messagesArea) {
+      messagesArea.scrollTo({ top: messagesArea.scrollHeight, behavior: "smooth" });
+    }
+  }, [messages]);
+
+  const fetchRoomData = useCallback(async (isActive = true) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/rooms/${roomId}`, {
+        headers: authHeaders(),
+      });
+
+      if (!response.ok) throw new Error("Room not found.");
+
+      const data = await response.json();
+      if (isActive) {
+        setRoom(data);
+        setError(null);
+      }
+    } catch (err) {
+      console.error("Room loading error:", err);
+      if (isActive) setError(err.message || "Could not load game room.");
+    }
+  }, [roomId]);
+
+  const pollGameState = useCallback(async (isActive = true) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/rooms/${roomId}/game-state`, {
+        headers: authHeaders(),
+      });
+      if (!response.ok) throw new Error("Could not load game state.");
+      const data = await response.json();
+      if (!isActive || data.version <= gameStateVersionRef.current) return;
+      gameStateVersionRef.current = data.version;
+      setGameState(data.state);
+    } catch (err) {
+      if (isActive) console.error("Game state polling error:", err);
+    }
+  }, [roomId]);
+
+  const mergeChatMessages = useCallback((incoming = []) => {
+    if (!incoming.length) return;
+
+    setMessages((previous) => {
+      const next = [...previous];
+      incoming.forEach((message) => {
+        const existingIndex = next.findIndex((existing) => (
+          (message.client_message_id &&
+            existing.client_message_id === message.client_message_id) ||
+          (message.id != null && existing.id === message.id)
+        ));
+        if (existingIndex === -1) {
+          next.push(message);
+        } else {
+          next[existingIndex] = {
+            ...next[existingIndex],
+            ...message,
+            deliveryStatus: undefined,
+            deliveryError: undefined,
+          };
+        }
+      });
+      return next;
+    });
+  }, []);
+
+  const pollChat = useCallback(async (isActive = true) => {
+    const pollingRoomId = String(roomId);
+    if (chatPollInFlightRef.current.has(pollingRoomId)) return;
+    chatPollInFlightRef.current.add(pollingRoomId);
+    try {
+      const afterId = chatLastMessageIdRef.current;
+      const afterQuery = afterId ? `?after_id=${afterId}` : "";
+      const response = await fetch(`${API_BASE_URL}/rooms/${roomId}/chat${afterQuery}`, {
+        headers: authHeaders(),
+      });
+      if (!response.ok) throw new Error("Could not load chat messages.");
+      const incoming = await response.json();
+      if (!isActive) return;
+      setChatStatus("connected");
+      mergeChatMessages(incoming);
+      incoming.forEach((message) => {
+        if (message?.id != null) {
+          chatLastMessageIdRef.current = Math.max(
+            chatLastMessageIdRef.current,
+            Number(message.id) || 0,
+          );
+        }
+      });
+
+      const ownMessages = incoming.filter((message) => message.username === currentUser?.username);
+      if (ownMessages.some((message) => message.warning_triggered)) {
+        setWarningMsg("Automated warning issued: Toxicity detected. Please keep the conversation friendly.");
+      }
+    } catch (err) {
+      if (isActive) {
+        setChatStatus("error");
+        console.error("Chat polling error:", err);
+      }
+    } finally {
+      chatPollInFlightRef.current.delete(pollingRoomId);
+    }
+  }, [currentUser?.username, mergeChatMessages, roomId]);
+
+  useEffect(() => {
+    if (!currentUser?.username || !token) {
       navigate("/login");
       return;
     }
@@ -87,110 +193,15 @@ const activeRoomIdRef = useRef(roomId);
         chatPollingTimerRef.current = null;
       }
     };
-  }, [roomId, token, navigate]);
-
-  useEffect(() => {
-    const messagesArea = messagesAreaRef.current;
-    if (messagesArea) {
-      messagesArea.scrollTo({ top: messagesArea.scrollHeight, behavior: "smooth" });
-    }
-  }, [messages]);
-
-  const fetchRoomData = async (isActive = true) => {
-    try {
-      setError(null);
-      const response = await fetch(`${API_BASE_URL}/rooms/${roomId}`, {
-        headers: authHeaders(),
-      });
-
-      if (!response.ok) throw new Error("Room not found.");
-
-      const data = await response.json();
-      if (isActive) setRoom(data);
-    } catch (err) {
-      console.error("Room loading error:", err);
-      if (isActive) setError(err.message || "Could not load game room.");
-    }
-  };
-
-  const pollGameState = async (isActive = true) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/rooms/${roomId}/game-state`, {
-        headers: authHeaders(),
-      });
-      if (!response.ok) throw new Error("Could not load game state.");
-      const data = await response.json();
-      if (!isActive || data.version <= gameStateVersionRef.current) return;
-      gameStateVersionRef.current = data.version;
-      setGameState(data.state);
-    } catch (err) {
-      if (isActive) console.error("Game state polling error:", err);
-    }
-  };
-
-  const mergeChatMessages = (incoming = []) => {
-    if (!incoming.length) return;
-
-    setMessages((previous) => {
-      const next = [...previous];
-      incoming.forEach((message) => {
-        const existingIndex = next.findIndex((existing) => (
-          (message.client_message_id &&
-            existing.client_message_id === message.client_message_id) ||
-          (message.id != null && existing.id === message.id)
-        ));
-        if (existingIndex === -1) {
-          next.push(message);
-        } else {
-          next[existingIndex] = {
-            ...next[existingIndex],
-            ...message,
-            deliveryStatus: undefined,
-            deliveryError: undefined,
-          };
-        }
-      });
-      return next;
-    });
-  };
-
-  const pollChat = async (isActive = true) => {
-    const pollingRoomId = String(roomId);
-    if (chatPollInFlightRef.current.has(pollingRoomId)) return;
-    chatPollInFlightRef.current.add(pollingRoomId);
-    try {
-      const afterId = chatLastMessageIdRef.current;
-      const afterQuery = afterId ? `?after_id=${afterId}` : "";
-      const response = await fetch(`${API_BASE_URL}/rooms/${roomId}/chat${afterQuery}`, {
-        headers: authHeaders(),
-      });
-      if (!response.ok) throw new Error("Could not load chat messages.");
-      const incoming = await response.json();
-      if (!isActive) return;
-      setChatStatus("connected");
-      mergeChatMessages(incoming);
-      incoming.forEach((message) => {
-        if (message?.id != null) {
-          chatLastMessageIdRef.current = Math.max(
-            chatLastMessageIdRef.current,
-            Number(message.id) || 0,
-          );
-        }
-      });
-
-      const ownMessages = incoming.filter((message) => message.username === currentUser?.username);
-      if (ownMessages.some((message) => message.warning_triggered)) {
-        setWarningMsg("Automated warning issued: Toxicity detected. Please keep the conversation friendly.");
-      }
-    } catch (err) {
-      if (isActive) {
-        setChatStatus("error");
-        console.error("Chat polling error:", err);
-      }
-    } finally {
-      chatPollInFlightRef.current.delete(pollingRoomId);
-    }
-  };
+  }, [
+    currentUser?.username,
+    fetchRoomData,
+    navigate,
+    pollChat,
+    pollGameState,
+    roomId,
+    token,
+  ]);
 
   const sendChatMessage = async (pendingMessage) => {
     const { client_message_id: clientMessageId } = pendingMessage;
@@ -378,7 +389,6 @@ const activeRoomIdRef = useRef(roomId);
   const isHost = room.created_by === currentUser?.username;
   const gameStarted = room.room_status === "ACTIVE";
   const hasEnoughPlayers = players.length >= minimumPlayers;
-  const roomStatusLabel = gameStarted ? "GAME IN PROGRESS" : hasEnoughPlayers ? "READY TO START" : "WAITING FOR PLAYERS";
   const currentGridStyle = {
     ...styles.mainGrid,
     gridTemplateColumns: isMobile ? "1fr" : "1.8fr 1.2fr",
@@ -482,8 +492,8 @@ const activeRoomIdRef = useRef(roomId);
     messages.map((m, index) => {
       const isOwn = m.username === currentUser?.username;
       const isSystem = m.username === "System";
-      const predictionText = m.prediction || (m.status === "Toxic" ? "Toxic" : "Non-Toxic");
-      const hasPrediction = !m.deliveryStatus && !isSystem && (m.prediction || m.status);
+      const predictionText = getPredictionLabel(m.prediction, m.status);
+      const hasPrediction = !m.deliveryStatus && !isSystem && predictionText;
 
       return (
         <div
@@ -505,8 +515,8 @@ const activeRoomIdRef = useRef(roomId);
 
               {hasPrediction && (
                 <span
-                  className={m.status === "Toxic" ? "badge badge-toxic" : "badge badge-safe"}
-                  style={m.status === "Toxic" ? styles.toxicBadge : styles.safeBadge}
+                  className={predictionText === "TOXIC" ? "badge badge-toxic" : "badge badge-safe"}
+                  style={predictionText === "TOXIC" ? styles.toxicBadge : styles.safeBadge}
                 >
                   {predictionText}
                 </span>
@@ -566,11 +576,8 @@ const activeRoomIdRef = useRef(roomId);
 function GameManager({ gameName, gameState, sendGameMove, currentUser, players, gameStarted }) {
   const cleanName = gameName.toLowerCase();
 
-  if (cleanName.includes("tic-tac-toe")) {
-    return <TicTacToe state={gameState} sendMove={sendGameMove} currentUser={currentUser} players={players} gameStarted={gameStarted} />;
-  }
-  if (cleanName.includes("connect four")) {
-    return <ConnectFour state={gameState} sendMove={sendGameMove} currentUser={currentUser} players={players} gameStarted={gameStarted} />;
+  if (cleanName.includes("tic-tac-toe") || cleanName.includes("connect four")) {
+    return <div style={styles.loadingText}>This game mode is not available.</div>;
   }
   if (cleanName.includes("snakes and ladders")) {
     return <SnakesAndLadders state={gameState} sendMove={sendGameMove} currentUser={currentUser} players={players} gameStarted={gameStarted} />;
@@ -639,25 +646,6 @@ function getChessMoves(board, origin) {
 
 } */
 
-const chessInitialBoard = ["r", "n", "b", "q", "k", "b", "n", "r", "p", "p", "p", "p", "p", "p", "p", "p", ...Array(32).fill(null), "P", "P", "P", "P", "P", "P", "P", "P", "R", "N", "B", "Q", "K", "B", "N", "R"];
-const chessPieceColor = (piece) => piece && (piece === piece.toUpperCase() ? "white" : "black");
-const chessSquare = (row, column) => row >= 0 && row < 8 && column >= 0 && column < 8 ? row * 8 + column : -1;
-function chessMoves(board, origin) {
-  const piece = board[origin]; if (!piece) return [];
-  const row = Math.floor(origin / 8), column = origin % 8, color = chessPieceColor(piece), moves = [];
-  const step = (targetRow, targetColumn) => { const target = chessSquare(targetRow, targetColumn); if (target < 0) return false; if (!board[target] || chessPieceColor(board[target]) !== color) moves.push(target); return !board[target]; };
-  const slide = (directions) => directions.forEach(([rowStep, columnStep]) => { let targetRow = row + rowStep, targetColumn = column + columnStep; while (step(targetRow, targetColumn)) { targetRow += rowStep; targetColumn += columnStep; } });
-  switch (piece.toLowerCase()) {
-    case "p": { const direction = color === "white" ? -1 : 1, forward = chessSquare(row + direction, column); if (forward >= 0 && !board[forward]) { moves.push(forward); const double = chessSquare(row + direction * 2, column); if ((color === "white" ? row === 6 : row === 1) && double >= 0 && !board[double]) moves.push(double); } [-1, 1].forEach((columnStep) => { const target = chessSquare(row + direction, column + columnStep); if (target >= 0 && board[target] && chessPieceColor(board[target]) !== color) moves.push(target); }); break; }
-    case "n": [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]].forEach(([rowStep, columnStep]) => step(row + rowStep, column + columnStep)); break;
-    case "b": slide([[-1, -1], [-1, 1], [1, -1], [1, 1]]); break;
-    case "r": slide([[-1, 0], [1, 0], [0, -1], [0, 1]]); break;
-    case "q": slide([[-1, -1], [-1, 1], [1, -1], [1, 1], [-1, 0], [1, 0], [0, -1], [0, 1]]); break;
-    case "k": [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]].forEach(([rowStep, columnStep]) => step(row + rowStep, column + columnStep)); break;
-    default: break;
-  }
-  return moves;
-}
 const CHESS_START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const chessFiles = "abcdefgh";
 
@@ -756,18 +744,6 @@ function ChessGame({ state, sendMove, currentUser, players, gameStarted }) {
 
   const status = state?.gameStatus === "Checkmate" ? `Checkmate - Winner: ${state.winner}` : state?.drawReason || (state?.paused ? "Game Paused" : `${chess.turn() === "w" ? "White" : "Black"}'s Turn${chess.isCheck() ? " - Check!" : ""}`);
   return <div className="chess-game" style={gameStyles.wrapper}><div style={gameStyles.turnInfo}><strong>{status}</strong><span> | Your Color: {myColor === "w" ? "White" : myColor === "b" ? "Black" : "Spectator"}{isMyTurn && !state?.paused && !state?.gameOver ? " | Your Turn" : ""}</span></div><div className="chess-controls"><button className="chess-control-new" onClick={() => { if (confirm("Start a new chess game?")) resetGame(); }}>New Game</button><button className="chess-control-pause" onClick={() => publish({ ...state, fen: chess.fen(), paused: true })} disabled={state?.paused || state?.gameOver}>Pause</button><button className="chess-control-resume" onClick={() => publish({ ...state, fen: chess.fen(), paused: false })} disabled={!state?.paused || state?.gameOver}>Resume</button></div><div className="chess-board-layout"><div className="chessBoard" style={gameStyles.chessBoard}>{board.map((piece, index) => { const square = `${chessFiles[index % 8]}${8 - Math.floor(index / 8)}`; const isTarget = legalTargets.includes(square); const isCapture = isTarget && Boolean(chess.get(square)); const isCheckedKing = chess.isCheck() && chess.get(square)?.type === "k" && chess.get(square)?.color === chess.turn(); return <button key={square} type="button" onClick={() => selectSquare(square)} style={{ ...gameStyles.chessCell, backgroundColor: (Math.floor(index / 8) + index % 8) % 2 === 0 ? "#f0d9b5" : "#b58863", outline: selected === square ? "3px solid #7c3aed" : isCheckedKing ? "3px solid #ef4444" : isCapture ? "3px solid #ef4444" : "none", boxShadow: isTarget && !isCapture ? "inset 0 0 0 10px rgba(124,58,237,.35)" : "none" }}>{piece && getChessPieceSymbol(piece)}{isTarget && !isCapture && <span className="chess-move-dot" />}</button>; })}</div><CapturedPieces pieces={capturedPieces} /></div>{promotion && <div className="chess-promotion"><strong>Choose promotion</strong>{["q", "r", "b", "n"].map((piece) => <button key={piece} type="button" onClick={() => applyMove(promotion.from, promotion.to, piece)}>{getChessPieceSymbol(myColor === "w" ? piece.toUpperCase() : piece)}</button>)}</div>}{state?.paused && <div className="chess-paused-overlay">Game Paused</div>}<p style={gameStyles.smallHint}>Full legal movement, check, checkmate, castling, en passant, promotion, and draw detection are enabled.</p></div>;
-}
-
-function RulesChessGame({ state, sendMove, currentUser, players, gameStarted }) {
-  const navigate = useNavigate(), board = state?.board || chessInitialBoard, isWhiteNext = state?.isWhiteNext !== undefined ? state.isWhiteNext : true;
-  const white = players[0]?.username || "White", black = players[1]?.username || "Black", myColor = currentUser?.username === white ? "white" : currentUser?.username === black ? "black" : null, isMyTurn = (isWhiteNext && myColor === "white") || (!isWhiteNext && myColor === "black");
-  const [selected, setSelected] = useState(null), [moves, setMoves] = useState([]), paused = Boolean(state?.paused), gameOver = Boolean(state?.gameOver);
-  const clearSelection = () => { setSelected(null); setMoves([]); };
-  const publish = (next) => sendMove({ ...next, paused: Boolean(next.paused), gameOver: Boolean(next.gameOver) });
-  const clickSquare = (index) => { if (!gameStarted || paused || gameOver || !isMyTurn) return; if (selected !== null && moves.includes(index)) { const nextBoard = [...board], captured = nextBoard[index]; nextBoard[index] = nextBoard[selected]; nextBoard[selected] = null; const capturedKing = captured?.toLowerCase() === "k"; publish({ board: nextBoard, isWhiteNext: !isWhiteNext, gameOver: capturedKing, winner: capturedKing ? (isWhiteNext ? white : black) : null, capturedPiece: captured || null, capturedBy: captured ? currentUser?.username : null, capturedPieces: captured ? [...(state?.capturedPieces || []), captured] : (state?.capturedPieces || []) }); clearSelection(); return; } const piece = board[index]; if (piece && chessPieceColor(piece) === myColor) { setSelected(index); setMoves(chessMoves(board, index)); } else clearSelection(); };
-  const reset = () => { publish({ board: [...chessInitialBoard], isWhiteNext: true, paused: false, gameOver: false, winner: null, resignedBy: null, capturedPieces: [] }); clearSelection(); };
-  const status = gameOver ? `Winner: ${state.winner || "unknown"}${state.resignedBy ? ` (${state.resignedBy} resigned)` : ""}` : paused ? "Game Paused" : `${isWhiteNext ? "White" : "Black"}'s Turn`;
-  return <div style={gameStyles.wrapper}><div style={gameStyles.turnInfo}><strong>{status}</strong><span> | Your Color: {myColor || "Spectator"}</span></div><div className="chess-controls"><button onClick={() => { if (confirm("Start a new chess game?")) reset(); }}>New Game</button><button onClick={() => publish({ ...state, board, paused: true })} disabled={paused || gameOver}>Pause</button><button onClick={() => publish({ ...state, board, paused: false })} disabled={!paused || gameOver}>Resume</button><button onClick={() => { if (confirm("Restart the current chess game?")) reset(); }}>Restart</button><button onClick={() => { if (confirm("Resign this game?")) publish({ ...state, board, gameOver: true, winner: myColor === "white" ? black : white, resignedBy: currentUser?.username }); }} disabled={gameOver || !myColor}>Resign</button><button onClick={() => navigate("/play-lobby")}>Menu</button></div><div className="chessBoard" style={gameStyles.chessBoard}>{board.map((piece, index) => { const row = Math.floor(index / 8), column = index % 8, target = moves.includes(index), capture = target && Boolean(piece); return <button key={index} onClick={() => clickSquare(index)} style={{ ...gameStyles.chessCell, backgroundColor: (row + column) % 2 === 0 ? "#f0d9b5" : "#b58863", outline: selected === index ? "3px solid #7c3aed" : capture ? "3px solid #ef4444" : "none" }}>{piece && getChessPieceSymbol(piece)}{target && !capture && <span className="chess-move-dot" />}</button>; })}</div><p style={gameStyles.smallHint}>Basic chess movement enabled. Check, castling, en passant, and promotion are not implemented.</p></div>;
 }
 
 function SnakesAndLadders({ state, sendMove, currentUser, players, gameStarted }) {

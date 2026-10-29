@@ -1,6 +1,11 @@
 import { useState, useEffect } from "react";
 import { API_BASE_URL } from "../config";
 import { authHeaders } from "../utils/auth";
+import {
+  formatModelScore,
+  getPredictionLabel,
+  isToxicStatus,
+} from "../utils/modelScore";
 
 export default function History() {
   const [history, setHistory] = useState([]);
@@ -14,39 +19,35 @@ export default function History() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchHistoryData();
+    let active = true;
+    fetch(`${API_BASE_URL}/history/me`, { headers: authHeaders() })
+      .then((response) => {
+        if (!response.ok) throw new Error("Could not retrieve history logs.");
+        return response.json();
+      })
+      .then((historyData) => {
+        if (!active) return null;
+        setHistory(historyData);
+        return fetch(`${API_BASE_URL}/games`, { headers: authHeaders() });
+      })
+      .then((gamesResponse) => {
+        if (!active || !gamesResponse?.ok) return null;
+        return gamesResponse.json().then((gamesData) => {
+          if (active) setGames(gamesData);
+          return null;
+        });
+      })
+      .catch((err) => {
+        if (active) setError(err.message);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
-
-  const fetchHistoryData = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const historyRes = await fetch(`${API_BASE_URL}/history/me`, {
-        headers: authHeaders(),
-      });
-
-      if (!historyRes.ok) {
-        throw new Error("Could not retrieve history logs.");
-      }
-
-      const historyData = await historyRes.json();
-      setHistory(historyData);
-
-      const gamesRes = await fetch(`${API_BASE_URL}/games`, {
-        headers: authHeaders(),
-      });
-
-      if (gamesRes.ok) {
-        const gamesData = await gamesRes.json();
-        setGames(gamesData);
-      }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const filteredHistory = history.filter((item) => {
     const matchesSearch = item.message
@@ -118,6 +119,7 @@ export default function History() {
             >
               <option value="">All States</option>
               <option value="Safe">Safe</option>
+              <option value="Non-Toxic">Non-Toxic</option>
               <option value="Toxic">Toxic</option>
             </select>
           </div>
@@ -147,8 +149,11 @@ export default function History() {
             </thead>
 
             <tbody>
-              {filteredHistory.map((item) => (
-                <tr key={item.id}>
+              {filteredHistory.map((item) => {
+                const label = getPredictionLabel(item.prediction, item.status);
+
+                return (
+                  <tr key={item.id}>
                   <td>
                     <div style={styles.gameRoomFlex}>
                       <span style={styles.gameText}>
@@ -165,23 +170,23 @@ export default function History() {
                     "{item.message}"
                   </td>
 
-                  <td>{item.prediction}</td>
+                  <td>{label}</td>
 
                   <td>
-                    <span
-                      className={`badge ${
-                        item.status === "Safe"
-                          ? "badge-safe"
-                          : "badge-toxic"
-                      }`}
-                    >
-                      {item.status}
-                    </span>
+                    {label && (
+                      <span
+                        className={`badge ${
+                          isToxicStatus(label) ? "badge-toxic" : "badge-safe"
+                        }`}
+                      >
+                        {label}
+                      </span>
+                    )}
                   </td>
 
                   <td>
                     <span style={styles.modelSpan}>
-                      {item.confidence}/100
+                      {formatModelScore(item)}
                     </span>
 
                     <span style={styles.modelSub}>
@@ -192,8 +197,9 @@ export default function History() {
                   <td style={styles.dateCell}>
                     {new Date(item.created_at).toLocaleString()}
                   </td>
-                </tr>
-              ))}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

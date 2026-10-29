@@ -1,5 +1,6 @@
-from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, Depends, HTTPException, status
+from datetime import date, datetime, timedelta, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case
@@ -10,6 +11,108 @@ from ..services.auth import require_admin
 from ..services.moderation import refresh_moderation_status
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+TOXIC_CATEGORY_LABELS = (
+    "Insults & Flaming",
+    "Other Offensive Texts",
+    "Hate & Harassment",
+    "Threats",
+    "Extremism",
+)
+GAMETOX_CATEGORY_LABELS = ("Non-Toxic", *TOXIC_CATEGORY_LABELS)
+
+
+def _resolve_calendar_window(start_date, end_date, timezone_name):
+    try:
+        local_timezone = ZoneInfo(timezone_name)
+    except (TypeError, ValueError, ZoneInfoNotFoundError) as exc:
+        raise HTTPException(
+            status_code=422,
+            detail="Invalid timezone. Use a valid IANA timezone name.",
+        ) from exc
+
+    try:
+        local_today = datetime.now(local_timezone).date()
+        range_end = date.fromisoformat(end_date) if end_date else local_today
+        range_start = (
+            date.fromisoformat(start_date)
+            if start_date
+            else range_end - timedelta(days=6)
+        )
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(
+            status_code=422,
+            detail="Dates must use the YYYY-MM-DD format.",
+        ) from exc
+
+    if range_start > range_end:
+        range_start, range_end = range_end, range_start
+
+    start_local = datetime.combine(
+        range_start, datetime.min.time(), tzinfo=local_timezone
+    )
+    end_local = datetime.combine(
+        range_end + timedelta(days=1), datetime.min.time(), tzinfo=local_timezone
+    )
+    return (
+        local_timezone,
+        range_start,
+        range_end,
+        start_local.astimezone(timezone.utc),
+        end_local.astimezone(timezone.utc),
+    )
+
+
+def _build_daily_timeline(range_start, range_end, counts_by_day):
+    timeline = []
+    for day_offset in range((range_end - range_start).days + 1):
+        day_value = range_start + timedelta(days=day_offset)
+        total, toxic_count = counts_by_day.get(day_value, (0, 0))
+        timeline.append({
+            "date": day_value.isoformat(),
+            "total": total,
+            "toxic": toxic_count,
+            "toxicity_rate": round((toxic_count / total) * 100, 1) if total else None,
+            "safe": total - toxic_count,
+        })
+    return timeline
+
+
+def _display_category_distribution(categories, non_toxic_count):
+    canonical_labels = {
+        "".join(character for character in label.casefold() if character.isalnum()): label
+        for label in TOXIC_CATEGORY_LABELS
+    }
+    display_counts = {label: 0 for label in GAMETOX_CATEGORY_LABELS}
+    display_counts["Non-Toxic"] = int(non_toxic_count)
+
+    for label, count in categories.items():
+        normalized_label = "".join(
+            character
+            for character in str(label or "").casefold()
+            if character.isalnum()
+        )
+        canonical_label = canonical_labels.get(normalized_label)
+        if canonical_label:
+            display_counts[canonical_label] += int(count)
+
+    return display_counts
+
+
+def _model_score_metadata(selected_model):
+    if selected_model == "linear_svm":
+        confidence_type = (
+            "uncalibrated absolute Linear SVM decision margin; not a probability"
+        )
+    elif selected_model == "logistic_regression":
+        confidence_type = "uncalibrated Logistic Regression score (%)"
+    else:
+        confidence_type = "uncalibrated score"
+    return {
+        "selected_model": selected_model or "",
+        "confidence_is_calibrated": False,
+        "confidence_type": confidence_type,
+    }
 
 
 class RestrictRequest(BaseModel):
@@ -52,6 +155,7 @@ class GameUpdateAdmin(BaseModel):
 def get_admin_dashboard(
     start_date: str = None,
     end_date: str = None,
+    timezone_name: str = Query("UTC", alias="timezone"),
     db: Session = Depends(get_db),
     admin: User = Depends(require_admin)
 ):
@@ -111,71 +215,99 @@ def get_admin_dashboard(
     top_toxic_users = [{"username": u.username, "warnings": u.warning_count} for u in toxic_users_query]
 
     # Build the requested calendar range before merging database aggregates.
-    today = datetime.now(timezone.utc).date()
-    try:
-        range_end = datetime.fromisoformat(end_date).date() if end_date else today
-        range_start = datetime.fromisoformat(start_date).date() if start_date else range_end - timedelta(days=6)
-    except ValueError:
-        range_end = today
-        range_start = today - timedelta(days=6)
-    if range_start > range_end:
-        range_start, range_end = range_end, range_start
-    range_start_dt = datetime.combine(range_start, datetime.min.time(), tzinfo=timezone.utc)
-    range_end_dt = datetime.combine(range_end + timedelta(days=1), datetime.min.time(), tzinfo=timezone.utc)
-    timeline_query = db.query(
-    func.date(ChatMessage.created_at).label("day"),
-    func.count(ChatMessage.id).label("total"),
-    func.sum(
-        case(
-            (ChatMessage.status == "Toxic", 1),
-            else_=0
+    (
+        local_timezone,
+        range_start,
+        range_end,
+        range_start_dt,
+        range_end_dt,
+    ) = _resolve_calendar_window(start_date, end_date, timezone_name)
+    if db.bind.dialect.name == "postgresql":
+        local_message_day = func.date(
+            func.timezone(timezone_name, ChatMessage.created_at)
         )
-    ).label("toxic")
-).filter(
-    ChatMessage.created_at >= range_start_dt,
-    ChatMessage.created_at < range_end_dt
-).group_by(
-    func.date(ChatMessage.created_at)
-).order_by(
-    func.date(ChatMessage.created_at)
-).all()
-    timeline = []
-    timeline_by_day = {str(day): (int(total or 0), int(toxic or 0)) for day, total, toxic in timeline_query}
-    day_count = (range_end - range_start).days + 1
-    for day_offset in range(day_count):
-        day_value = range_start + timedelta(days=day_offset)
-        day_str = day_value.isoformat()
-        total, toxic_count = timeline_by_day.get(day_str, (0, 0))
-        timeline.append({
-            "date": day_str,
-            "total": total,
-            "toxic": toxic_count,
-            "toxicity_rate": round((toxic_count / total) * 100, 1) if total else 0,
-            "safe": total - toxic_count
-        })
+        timeline_query = db.query(
+            local_message_day.label("day"),
+            func.count(ChatMessage.id).label("total"),
+            func.sum(
+                case((ChatMessage.status == "Toxic", 1), else_=0)
+            ).label("toxic"),
+        ).filter(
+            ChatMessage.created_at >= range_start_dt,
+            ChatMessage.created_at < range_end_dt,
+        ).group_by(local_message_day).order_by(local_message_day).all()
+        counts_by_day = {
+            day: (int(total or 0), int(toxic or 0))
+            for day, total, toxic in timeline_query
+        }
+    else:
+        timeline_rows = db.query(
+            ChatMessage.created_at, ChatMessage.status
+        ).filter(
+            ChatMessage.created_at >= range_start_dt,
+            ChatMessage.created_at < range_end_dt,
+        ).all()
+        counts_by_day = {}
+        for created_at, message_status in timeline_rows:
+            if created_at.tzinfo is None:
+                created_at = created_at.replace(tzinfo=timezone.utc)
+            day = created_at.astimezone(local_timezone).date()
+            total, toxic = counts_by_day.get(day, (0, 0))
+            counts_by_day[day] = (
+                total + 1,
+                toxic + int(message_status == "Toxic"),
+            )
+    timeline = _build_daily_timeline(range_start, range_end, counts_by_day)
 
-    today_start = datetime.combine(today, datetime.min.time(), tzinfo=timezone.utc)
-    week_start = today_start - timedelta(days=6)
-    today_messages = db.query(ChatMessage).filter(ChatMessage.created_at >= today_start).count()
+    local_today = datetime.now(local_timezone).date()
+    today_start = datetime.combine(
+        local_today, datetime.min.time(), tzinfo=local_timezone
+    ).astimezone(timezone.utc)
+    tomorrow_start = datetime.combine(
+        local_today + timedelta(days=1),
+        datetime.min.time(),
+        tzinfo=local_timezone,
+    ).astimezone(timezone.utc)
+    week_start = datetime.combine(
+        local_today - timedelta(days=6),
+        datetime.min.time(),
+        tzinfo=local_timezone,
+    ).astimezone(timezone.utc)
+    today_messages = db.query(ChatMessage).filter(
+        ChatMessage.created_at >= today_start,
+        ChatMessage.created_at < tomorrow_start,
+    ).count()
     today_toxic_messages = db.query(ChatMessage).filter(
         ChatMessage.created_at >= today_start,
-        ChatMessage.status == "Toxic"
+        ChatMessage.created_at < tomorrow_start,
+        ChatMessage.status == "Toxic",
     ).count()
-    week_messages = db.query(ChatMessage).filter(ChatMessage.created_at >= week_start).count()
-    week_users = db.query(User).filter(User.created_at >= week_start).count()
+    week_messages = db.query(ChatMessage).filter(
+        ChatMessage.created_at >= week_start,
+        ChatMessage.created_at < tomorrow_start,
+    ).count()
+    week_users = db.query(User).filter(
+        User.created_at >= week_start,
+        User.created_at < tomorrow_start,
+    ).count()
     recent_messages = db.query(ChatMessage).filter(
         ChatMessage.status == "Toxic"
     ).order_by(ChatMessage.created_at.desc()).limit(100).all()
-    recent_toxic_activity = [{
-        "id": message.id,
-        "username": message.user.username if message.user else "Deleted User",
-        "message": message.message,
-        "prediction": message.prediction,
-        "confidence": message.confidence,
-        "created_at": message.created_at,
-        "game_name": message.game.name if message.game else None,
-        "room_name": message.room.room_name if message.room else None
-    } for message in recent_messages]
+    recent_toxic_activity = []
+    for message in recent_messages:
+        recent_toxic_activity.append({
+            "id": message.id,
+            "username": message.user.username if message.user else "Deleted User",
+            "message": message.message,
+            "prediction": message.prediction,
+            "confidence": message.confidence,
+            **_model_score_metadata(
+                getattr(message, "selected_model", "")
+            ),
+            "created_at": message.created_at,
+            "game_name": message.game.name if message.game else None,
+            "room_name": message.room.room_name if message.room else None,
+        })
 
     return {
         "fetched_at": datetime.now(timezone.utc),
@@ -196,6 +328,9 @@ def get_admin_dashboard(
         },
         "charts": {
             "categories": cat_distribution,
+            "display_categories": _display_category_distribution(
+                cat_distribution, safe_messages
+            ),
             "top_toxic_users": top_toxic_users,
             "timeline": timeline,
             "moderation_actions": moderation_distribution
@@ -260,6 +395,7 @@ def get_user_details(user_id: int, db: Session = Depends(get_db), admin: User = 
         "prediction": c.prediction,
         "status": c.status,
         "confidence": c.confidence,
+        "selected_model": c.selected_model,
         "created_at": c.created_at
     } for c in chats]
 
@@ -469,14 +605,27 @@ def list_flagged_messages(
     db: Session = Depends(get_db),
     admin: User = Depends(require_admin)
 ):
-    query = db.query(ChatMessage).filter(ChatMessage.status == "Toxic")
+    query = db.query(ChatMessage)
 
     if user_id:
         query = query.filter(ChatMessage.user_id == user_id)
     if game_id:
         query = query.filter(ChatMessage.game_id == game_id)
     if prediction:
-        query = query.filter(ChatMessage.prediction == prediction)
+        normalized_prediction = prediction.lower().replace(" ", "").replace("-", "")
+        if normalized_prediction == "nontoxic":
+            normalized_message_prediction = func.lower(
+                func.replace(func.replace(ChatMessage.prediction, " ", ""), "-", "")
+            )
+            query = query.filter(
+                ChatMessage.status.in_(("Safe", "Non-Toxic")),
+                normalized_message_prediction == "nontoxic",
+            )
+        else:
+            query = query.filter(
+                ChatMessage.status == "Toxic",
+                ChatMessage.prediction == prediction,
+            )
     from datetime import datetime
     if start_date:
         try:

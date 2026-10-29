@@ -1,0 +1,2010 @@
+{
+  "experiment": "GameTox binary Toxic vs Non-Toxic",
+  "source": "dataset\\train.csv",
+  "source_rows": 42959,
+  "source_ids_preserved": true,
+  "original_label_mapping": {
+    "0": "Non-Toxic",
+    "1": "Toxic",
+    "2": "Toxic",
+    "3": "Toxic",
+    "4": "Toxic",
+    "5": "Toxic"
+  },
+  "binary_class_counts": {
+    "Non-Toxic": 34223,
+    "Toxic": 8131
+  },
+  "empty_normalized_rows_excluded": 605,
+  "split": {
+    "method": "StratifiedGroupKFold; first of five folds is holdout",
+    "random_state": 42,
+    "holdout_fold": 0,
+    "train_rows": 33882,
+    "holdout_rows": 8472,
+    "train_class_counts": {
+      "Non-Toxic": 27378,
+      "Toxic": 6504
+    },
+    "holdout_class_counts": {
+      "Non-Toxic": 6845,
+      "Toxic": 1627
+    },
+    "normalized_group_overlap": 0,
+    "traceability_file": "ml\\artifacts\\gametox_binary_grouped_split.csv"
+  },
+  "vectorizer": {
+    "type": "TfidfVectorizer",
+    "max_features": 10000,
+    "ngram_range": [
+      1,
+      2
+    ]
+  },
+  "majority_class_baseline": {
+    "accuracy": 0.8079556185080264,
+    "per_class": {
+      "0": {
+        "name": "Non-Toxic",
+        "precision": 0.8079556185080264,
+        "recall": 1.0,
+        "f1": 0.8937781549911863,
+        "support": 6845
+      },
+      "1": {
+        "name": "Toxic",
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 1627
+      }
+    },
+    "toxic_precision": 0.0,
+    "toxic_recall": 0.0,
+    "toxic_f1": 0.0,
+    "macro_f1": 0.44688907749559315,
+    "confusion_matrix": {
+      "class_names": [
+        "Non-Toxic",
+        "Toxic"
+      ],
+      "rows_actual_columns_predicted": [
+        [
+          6845,
+          0
+        ],
+        [
+          1627,
+          0
+        ]
+      ]
+    },
+    "training_majority_class": "Non-Toxic"
+  },
+  "candidate_cross_validation": {
+    "logistic_regression_C0.5_unweighted": {
+      "model_type": "logistic_regression",
+      "C": 0.5,
+      "class_weight": null,
+      "method": "3-fold StratifiedGroupKFold by normalized text",
+      "random_state": 42,
+      "folds": [
+        {
+          "fold": 1,
+          "train_rows": 22588,
+          "validation_rows": 11294,
+          "normalized_group_overlap": 0,
+          "metrics": {
+            "accuracy": 0.883300867717372,
+            "per_class": {
+              "0": {
+                "name": "Non-Toxic",
+                "precision": 0.8811755516500683,
+                "recall": 0.9889327197019505,
+                "f1": 0.9319496076001652,
+                "support": 9126
+              },
+              "1": {
+                "name": "Toxic",
+                "precision": 0.9039923954372624,
+                "recall": 0.43865313653136534,
+                "f1": 0.5906832298136646,
+                "support": 2168
+              }
+            },
+            "toxic_precision": 0.9039923954372624,
+            "toxic_recall": 0.43865313653136534,
+            "toxic_f1": 0.5906832298136646,
+            "macro_f1": 0.7613164187069149,
+            "confusion_matrix": {
+              "class_names": [
+                "Non-Toxic",
+                "Toxic"
+              ],
+              "rows_actual_columns_predicted": [
+                [
+                  9025,
+                  101
+                ],
+                [
+                  1217,
+                  951
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "fold": 2,
+          "train_rows": 22588,
+          "validation_rows": 11294,
+          "normalized_group_overlap": 0,
+          "metrics": {
+            "accuracy": 0.8816185585266513,
+            "per_class": {
+              "0": {
+                "name": "Non-Toxic",
+                "precision": 0.8835056622353521,
+                "recall": 0.9831251369712908,
+                "f1": 0.9306571235931747,
+                "support": 9126
+              },
+              "1": {
+                "name": "Toxic",
+                "precision": 0.8647936786654961,
+                "recall": 0.45433579335793356,
+                "f1": 0.595706078016329,
+                "support": 2168
+              }
+            },
+            "toxic_precision": 0.8647936786654961,
+            "toxic_recall": 0.45433579335793356,
+            "toxic_f1": 0.595706078016329,
+            "macro_f1": 0.7631816008047518,
+            "confusion_matrix": {
+              "class_names": [
+                "Non-Toxic",
+                "Toxic"
+              ],
+              "rows_actual_columns_predicted": [
+                [
+                  8972,
+                  154
+                ],
+                [
+                  1183,
+                  985
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "fold": 3,
+          "train_rows": 22588,
+          "validation_rows": 11294,
+          "normalized_group_overlap": 0,
+          "metrics": {
+            "accuracy": 0.879493536391004,
+            "per_class": {
+              "0": {
+                "name": "Non-Toxic",
+                "precision": 0.8812727094176569,
+                "recall": 0.9833442910365987,
+                "f1": 0.9295147340618365,
+                "support": 9126
+              },
+              "1": {
+                "name": "Toxic",
+                "precision": 0.8631863186318632,
+                "recall": 0.4423431734317343,
+                "f1": 0.5849344312290332,
+                "support": 2168
+              }
+            },
+            "toxic_precision": 0.8631863186318632,
+            "toxic_recall": 0.4423431734317343,
+            "toxic_f1": 0.5849344312290332,
+            "macro_f1": 0.7572245826454349,
+            "confusion_matrix": {
+              "class_names": [
+                "Non-Toxic",
+                "Toxic"
+              ],
+              "rows_actual_columns_predicted": [
+                [
+                  8974,
+                  152
+                ],
+                [
+                  1209,
+                  959
+                ]
+              ]
+            }
+          }
+        }
+      ],
+      "out_of_fold_metrics": {
+        "accuracy": 0.8814709875450092,
+        "per_class": {
+          "0": {
+            "name": "Non-Toxic",
+            "precision": 0.8819816873773708,
+            "recall": 0.9851340492366133,
+            "f1": 0.9307084440456883,
+            "support": 27378
+          },
+          "1": {
+            "name": "Toxic",
+            "precision": 0.8767413688673531,
+            "recall": 0.44511070110701106,
+            "f1": 0.5904548235774016,
+            "support": 6504
+          }
+        },
+        "toxic_precision": 0.8767413688673531,
+        "toxic_recall": 0.44511070110701106,
+        "toxic_f1": 0.5904548235774016,
+        "macro_f1": 0.760581633811545,
+        "confusion_matrix": {
+          "class_names": [
+            "Non-Toxic",
+            "Toxic"
+          ],
+          "rows_actual_columns_predicted": [
+            [
+              26971,
+              407
+            ],
+            [
+              3609,
+              2895
+            ]
+          ]
+        }
+      }
+    },
+    "logistic_regression_C0.5_balanced": {
+      "model_type": "logistic_regression",
+      "C": 0.5,
+      "class_weight": "balanced",
+      "method": "3-fold StratifiedGroupKFold by normalized text",
+      "random_state": 42,
+      "folds": [
+        {
+          "fold": 1,
+          "train_rows": 22588,
+          "validation_rows": 11294,
+          "normalized_group_overlap": 0,
+          "metrics": {
+            "accuracy": 0.8718788737382681,
+            "per_class": {
+              "0": {
+                "name": "Non-Toxic",
+                "precision": 0.9348737116321214,
+                "recall": 0.9044488275257506,
+                "f1": 0.9194096351991089,
+                "support": 9126
+              },
+              "1": {
+                "name": "Toxic",
+                "precision": 0.6462474645030426,
+                "recall": 0.7347785977859779,
+                "f1": 0.6876753723289445,
+                "support": 2168
+              }
+            },
+            "toxic_precision": 0.6462474645030426,
+            "toxic_recall": 0.7347785977859779,
+            "toxic_f1": 0.6876753723289445,
+            "macro_f1": 0.8035425037640267,
+            "confusion_matrix": {
+              "class_names": [
+                "Non-Toxic",
+                "Toxic"
+              ],
+              "rows_actual_columns_predicted": [
+                [
+                  8254,
+                  872
+                ],
+                [
+                  575,
+                  1593
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "fold": 2,
+          "train_rows": 22588,
+          "validation_rows": 11294,
+          "normalized_group_overlap": 0,
+          "metrics": {
+            "accuracy": 0.8640871259075615,
+            "per_class": {
+              "0": {
+                "name": "Non-Toxic",
+                "precision": 0.9383300612079917,
+                "recall": 0.8903133903133903,
+                "f1": 0.9136913129041327,
+                "support": 9126
+              },
+              "1": {
+                "name": "Toxic",
+                "precision": 0.6201138519924099,
+                "recall": 0.753690036900369,
+                "f1": 0.6804080782844055,
+                "support": 2168
+              }
+            },
+            "toxic_precision": 0.6201138519924099,
+            "toxic_recall": 0.753690036900369,
+            "toxic_f1": 0.6804080782844055,
+            "macro_f1": 0.7970496955942692,
+            "confusion_matrix": {
+              "class_names": [
+                "Non-Toxic",
+                "Toxic"
+              ],
+              "rows_actual_columns_predicted": [
+                [
+                  8125,
+                  1001
+                ],
+                [
+                  534,
+                  1634
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "fold": 3,
+          "train_rows": 22588,
+          "validation_rows": 11294,
+          "normalized_group_overlap": 0,
+          "metrics": {
+            "accuracy": 0.8601912519922083,
+            "per_class": {
+              "0": {
+                "name": "Non-Toxic",
+                "precision": 0.9336857832433053,
+                "recall": 0.8902038132807364,
+                "f1": 0.9114264879115948,
+                "support": 9126
+              },
+              "1": {
+                "name": "Toxic",
+                "precision": 0.613575009641342,
+                "recall": 0.7338560885608856,
+                "f1": 0.6683469859273262,
+                "support": 2168
+              }
+            },
+            "toxic_precision": 0.613575009641342,
+            "toxic_recall": 0.7338560885608856,
+            "toxic_f1": 0.6683469859273262,
+            "macro_f1": 0.7898867369194604,
+            "confusion_matrix": {
+              "class_names": [
+                "Non-Toxic",
+                "Toxic"
+              ],
+              "rows_actual_columns_predicted": [
+                [
+                  8124,
+                  1002
+                ],
+                [
+                  577,
+                  1591
+                ]
+              ]
+            }
+          }
+        }
+      ],
+      "out_of_fold_metrics": {
+        "accuracy": 0.8653857505460126,
+        "per_class": {
+          "0": {
+            "name": "Non-Toxic",
+            "precision": 0.935621825957463,
+            "recall": 0.8949886770399591,
+            "f1": 0.9148542946216888,
+            "support": 27378
+          },
+          "1": {
+            "name": "Toxic",
+            "precision": 0.6262836344728975,
+            "recall": 0.7407749077490775,
+            "f1": 0.678734944002254,
+            "support": 6504
+          }
+        },
+        "toxic_precision": 0.6262836344728975,
+        "toxic_recall": 0.7407749077490775,
+        "toxic_f1": 0.678734944002254,
+        "macro_f1": 0.7967946193119714,
+        "confusion_matrix": {
+          "class_names": [
+            "Non-Toxic",
+            "Toxic"
+          ],
+          "rows_actual_columns_predicted": [
+            [
+              24503,
+              2875
+            ],
+            [
+              1686,
+              4818
+            ]
+          ]
+        }
+      }
+    },
+    "logistic_regression_C1_unweighted": {
+      "model_type": "logistic_regression",
+      "C": 1.0,
+      "class_weight": null,
+      "method": "3-fold StratifiedGroupKFold by normalized text",
+      "random_state": 42,
+      "folds": [
+        {
+          "fold": 1,
+          "train_rows": 22588,
+          "validation_rows": 11294,
+          "normalized_group_overlap": 0,
+          "metrics": {
+            "accuracy": 0.8923322117938729,
+            "per_class": {
+              "0": {
+                "name": "Non-Toxic",
+                "precision": 0.8932975338106603,
+                "recall": 0.9843304843304843,
+                "f1": 0.9366072359503701,
+                "support": 9126
+              },
+              "1": {
+                "name": "Toxic",
+                "precision": 0.8844911147011308,
+                "recall": 0.5050738007380073,
+                "f1": 0.642982971227246,
+                "support": 2168
+              }
+            },
+            "toxic_precision": 0.8844911147011308,
+            "toxic_recall": 0.5050738007380073,
+            "toxic_f1": 0.642982971227246,
+            "macro_f1": 0.789795103588808,
+            "confusion_matrix": {
+              "class_names": [
+                "Non-Toxic",
+                "Toxic"
+              ],
+              "rows_actual_columns_predicted": [
+                [
+                  8983,
+                  143
+                ],
+                [
+                  1073,
+                  1095
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "fold": 2,
+          "train_rows": 22588,
+          "validation_rows": 11294,
+          "normalized_group_overlap": 0,
+          "metrics": {
+            "accuracy": 0.8910926155480786,
+            "per_class": {
+              "0": {
+                "name": "Non-Toxic",
+                "precision": 0.8951951951951952,
+                "recall": 0.9799474030243261,
+                "f1": 0.9356559949780289,
+                "support": 9126
+              },
+              "1": {
+                "name": "Toxic",
+                "precision": 0.8596625766871165,
+                "recall": 0.5170664206642066,
+                "f1": 0.6457373271889401,
+                "support": 2168
+              }
+            },
+            "toxic_precision": 0.8596625766871165,
+            "toxic_recall": 0.5170664206642066,
+            "toxic_f1": 0.6457373271889401,
+            "macro_f1": 0.7906966610834845,
+            "confusion_matrix": {
+              "class_names": [
+                "Non-Toxic",
+                "Toxic"
+              ],
+              "rows_actual_columns_predicted": [
+                [
+                  8943,
+                  183
+                ],
+                [
+                  1047,
+                  1121
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "fold": 3,
+          "train_rows": 22588,
+          "validation_rows": 11294,
+          "normalized_group_overlap": 0,
+          "metrics": {
+            "accuracy": 0.8843633787851957,
+            "per_class": {
+              "0": {
+                "name": "Non-Toxic",
+                "precision": 0.8895198246662682,
+                "recall": 0.9784133245671707,
+                "f1": 0.9318513880192026,
+                "support": 9126
+              },
+              "1": {
+                "name": "Toxic",
+                "precision": 0.8431528662420382,
+                "recall": 0.4884686346863469,
+                "f1": 0.6185747663551402,
+                "support": 2168
+              }
+            },
+            "toxic_precision": 0.8431528662420382,
+            "toxic_recall": 0.4884686346863469,
+            "toxic_f1": 0.6185747663551402,
+            "macro_f1": 0.7752130771871715,
+            "confusion_matrix": {
+              "class_names": [
+                "Non-Toxic",
+                "Toxic"
+              ],
+              "rows_actual_columns_predicted": [
+                [
+                  8929,
+                  197
+                ],
+                [
+                  1109,
+                  1059
+                ]
+              ]
+            }
+          }
+        }
+      ],
+      "out_of_fold_metrics": {
+        "accuracy": 0.8892627353757158,
+        "per_class": {
+          "0": {
+            "name": "Non-Toxic",
+            "precision": 0.8926671985108363,
+            "recall": 0.9808970706406603,
+            "f1": 0.9347046743935122,
+            "support": 27378
+          },
+          "1": {
+            "name": "Toxic",
+            "precision": 0.8622959452343338,
+            "recall": 0.5035362853628537,
+            "f1": 0.6357988740050475,
+            "support": 6504
+          }
+        },
+        "toxic_precision": 0.8622959452343338,
+        "toxic_recall": 0.5035362853628537,
+        "toxic_f1": 0.6357988740050475,
+        "macro_f1": 0.7852517741992799,
+        "confusion_matrix": {
+          "class_names": [
+            "Non-Toxic",
+            "Toxic"
+          ],
+          "rows_actual_columns_predicted": [
+            [
+              26855,
+              523
+            ],
+            [
+              3229,
+              3275
+            ]
+          ]
+        }
+      }
+    },
+    "logistic_regression_C1_balanced": {
+      "model_type": "logistic_regression",
+      "C": 1.0,
+      "class_weight": "balanced",
+      "method": "3-fold StratifiedGroupKFold by normalized text",
+      "random_state": 42,
+      "folds": [
+        {
+          "fold": 1,
+          "train_rows": 22588,
+          "validation_rows": 11294,
+          "normalized_group_overlap": 0,
+          "metrics": {
+            "accuracy": 0.8754205772976802,
+            "per_class": {
+              "0": {
+                "name": "Non-Toxic",
+                "precision": 0.9354620331716124,
+                "recall": 0.908503177733947,
+                "f1": 0.921785535605092,
+                "support": 9126
+              },
+              "1": {
+                "name": "Toxic",
+                "precision": 0.6565199506375977,
+                "recall": 0.7361623616236163,
+                "f1": 0.6940639269406392,
+                "support": 2168
+              }
+            },
+            "toxic_precision": 0.6565199506375977,
+            "toxic_recall": 0.7361623616236163,
+            "toxic_f1": 0.6940639269406392,
+            "macro_f1": 0.8079247312728657,
+            "confusion_matrix": {
+              "class_names": [
+                "Non-Toxic",
+                "Toxic"
+              ],
+              "rows_actual_columns_predicted": [
+                [
+                  8291,
+                  835
+                ],
+                [
+                  572,
+                  1596
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "fold": 2,
+          "train_rows": 22588,
+          "validation_rows": 11294,
+          "normalized_group_overlap": 0,
+          "metrics": {
+            "accuracy": 0.8679829998229148,
+            "per_class": {
+              "0": {
+                "name": "Non-Toxic",
+                "precision": 0.9382390081506141,
+                "recall": 0.8955730878807802,
+                "f1": 0.9164097101530526,
+                "support": 9126
+              },
+              "1": {
+                "name": "Toxic",
+                "precision": 0.6310491676345334,
+                "recall": 0.7518450184501845,
+                "f1": 0.686171332351084,
+                "support": 2168
+              }
+            },
+            "toxic_precision": 0.6310491676345334,
+            "toxic_recall": 0.7518450184501845,
+            "toxic_f1": 0.686171332351084,
+            "macro_f1": 0.8012905212520682,
+            "confusion_matrix": {
+              "class_names": [
+                "Non-Toxic",
+                "Toxic"
+              ],
+              "rows_actual_columns_predicted": [
+                [
+                  8173,
+                  953
+                ],
+                [
+                  538,
+                  1630
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "fold": 3,
+          "train_rows": 22588,
+          "validation_rows": 11294,
+          "normalized_group_overlap": 0,
+          "metrics": {
+            "accuracy": 0.8673632017000177,
+            "per_class": {
+              "0": {
+                "name": "Non-Toxic",
+                "precision": 0.933803457688808,
+                "recall": 0.8996274380889766,
+                "f1": 0.9163969192990289,
+                "support": 9126
+              },
+              "1": {
+                "name": "Toxic",
+                "precision": 0.6338928856914469,
+                "recall": 0.731549815498155,
+                "f1": 0.6792291220556745,
+                "support": 2168
+              }
+            },
+            "toxic_precision": 0.6338928856914469,
+            "toxic_recall": 0.731549815498155,
+            "toxic_f1": 0.6792291220556745,
+            "macro_f1": 0.7978130206773517,
+            "confusion_matrix": {
+              "class_names": [
+                "Non-Toxic",
+                "Toxic"
+              ],
+              "rows_actual_columns_predicted": [
+                [
+                  8210,
+                  916
+                ],
+                [
+                  582,
+                  1586
+                ]
+              ]
+            }
+          }
+        }
+      ],
+      "out_of_fold_metrics": {
+        "accuracy": 0.8702555929402043,
+        "per_class": {
+          "0": {
+            "name": "Non-Toxic",
+            "precision": 0.9358264431464766,
+            "recall": 0.9012345679012346,
+            "f1": 0.9182048228639476,
+            "support": 27378
+          },
+          "1": {
+            "name": "Toxic",
+            "precision": 0.640234167110165,
+            "recall": 0.7398523985239852,
+            "f1": 0.6864479315263908,
+            "support": 6504
+          }
+        },
+        "toxic_precision": 0.640234167110165,
+        "toxic_recall": 0.7398523985239852,
+        "toxic_f1": 0.6864479315263908,
+        "macro_f1": 0.8023263771951692,
+        "confusion_matrix": {
+          "class_names": [
+            "Non-Toxic",
+            "Toxic"
+          ],
+          "rows_actual_columns_predicted": [
+            [
+              24674,
+              2704
+            ],
+            [
+              1692,
+              4812
+            ]
+          ]
+        }
+      }
+    },
+    "linear_svm_C0.5_unweighted": {
+      "model_type": "linear_svm",
+      "C": 0.5,
+      "class_weight": null,
+      "method": "3-fold StratifiedGroupKFold by normalized text",
+      "random_state": 42,
+      "folds": [
+        {
+          "fold": 1,
+          "train_rows": 22588,
+          "validation_rows": 11294,
+          "normalized_group_overlap": 0,
+          "metrics": {
+            "accuracy": 0.9018948114042855,
+            "per_class": {
+              "0": {
+                "name": "Non-Toxic",
+                "precision": 0.912109375,
+                "recall": 0.9722770107385492,
+                "f1": 0.9412326296807043,
+                "support": 9126
+              },
+              "1": {
+                "name": "Toxic",
+                "precision": 0.8384418901660281,
+                "recall": 0.6056273062730627,
+                "f1": 0.7032672737011249,
+                "support": 2168
+              }
+            },
+            "toxic_precision": 0.8384418901660281,
+            "toxic_recall": 0.6056273062730627,
+            "toxic_f1": 0.7032672737011249,
+            "macro_f1": 0.8222499516909145,
+            "confusion_matrix": {
+              "class_names": [
+                "Non-Toxic",
+                "Toxic"
+              ],
+              "rows_actual_columns_predicted": [
+                [
+                  8873,
+                  253
+                ],
+                [
+                  855,
+                  1313
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "fold": 2,
+          "train_rows": 22588,
+          "validation_rows": 11294,
+          "normalized_group_overlap": 0,
+          "metrics": {
+            "accuracy": 0.9010979281034177,
+            "per_class": {
+              "0": {
+                "name": "Non-Toxic",
+                "precision": 0.9151031408728102,
+                "recall": 0.9673460442691212,
+                "f1": 0.9404996537580568,
+                "support": 9126
+              },
+              "1": {
+                "name": "Toxic",
+                "precision": 0.8190649666059502,
+                "recall": 0.6222324723247232,
+                "f1": 0.7072083879423329,
+                "support": 2168
+              }
+            },
+            "toxic_precision": 0.8190649666059502,
+            "toxic_recall": 0.6222324723247232,
+            "toxic_f1": 0.7072083879423329,
+            "macro_f1": 0.8238540208501948,
+            "confusion_matrix": {
+              "class_names": [
+                "Non-Toxic",
+                "Toxic"
+              ],
+              "rows_actual_columns_predicted": [
+                [
+                  8828,
+                  298
+                ],
+                [
+                  819,
+                  1349
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "fold": 3,
+          "train_rows": 22588,
+          "validation_rows": 11294,
+          "normalized_group_overlap": 0,
+          "metrics": {
+            "accuracy": 0.8948999468744466,
+            "per_class": {
+              "0": {
+                "name": "Non-Toxic",
+                "precision": 0.9081748071979434,
+                "recall": 0.967784352399737,
+                "f1": 0.9370325181687974,
+                "support": 9126
+              },
+              "1": {
+                "name": "Toxic",
+                "precision": 0.8126195028680688,
+                "recall": 0.5880996309963099,
+                "f1": 0.6823655338506823,
+                "support": 2168
+              }
+            },
+            "toxic_precision": 0.8126195028680688,
+            "toxic_recall": 0.5880996309963099,
+            "toxic_f1": 0.6823655338506823,
+            "macro_f1": 0.8096990260097399,
+            "confusion_matrix": {
+              "class_names": [
+                "Non-Toxic",
+                "Toxic"
+              ],
+              "rows_actual_columns_predicted": [
+                [
+                  8832,
+                  294
+                ],
+                [
+                  893,
+                  1275
+                ]
+              ]
+            }
+          }
+        }
+      ],
+      "out_of_fold_metrics": {
+        "accuracy": 0.8992975621273833,
+        "per_class": {
+          "0": {
+            "name": "Non-Toxic",
+            "precision": 0.911786941580756,
+            "recall": 0.9691358024691358,
+            "f1": 0.939587095860335,
+            "support": 27378
+          },
+          "1": {
+            "name": "Toxic",
+            "precision": 0.8232956921790046,
+            "recall": 0.605319803198032,
+            "f1": 0.6976785397838029,
+            "support": 6504
+          }
+        },
+        "toxic_precision": 0.8232956921790046,
+        "toxic_recall": 0.605319803198032,
+        "toxic_f1": 0.6976785397838029,
+        "macro_f1": 0.818632817822069,
+        "confusion_matrix": {
+          "class_names": [
+            "Non-Toxic",
+            "Toxic"
+          ],
+          "rows_actual_columns_predicted": [
+            [
+              26533,
+              845
+            ],
+            [
+              2567,
+              3937
+            ]
+          ]
+        }
+      }
+    },
+    "linear_svm_C0.5_balanced": {
+      "model_type": "linear_svm",
+      "C": 0.5,
+      "class_weight": "balanced",
+      "method": "3-fold StratifiedGroupKFold by normalized text",
+      "random_state": 42,
+      "folds": [
+        {
+          "fold": 1,
+          "train_rows": 22588,
+          "validation_rows": 11294,
+          "normalized_group_overlap": 0,
+          "metrics": {
+            "accuracy": 0.8718788737382681,
+            "per_class": {
+              "0": {
+                "name": "Non-Toxic",
+                "precision": 0.930775272074498,
+                "recall": 0.9090510628972167,
+                "f1": 0.9197849104717556,
+                "support": 9126
+              },
+              "1": {
+                "name": "Toxic",
+                "precision": 0.6514069718605627,
+                "recall": 0.7154059040590406,
+                "f1": 0.6819081116728951,
+                "support": 2168
+              }
+            },
+            "toxic_precision": 0.6514069718605627,
+            "toxic_recall": 0.7154059040590406,
+            "toxic_f1": 0.6819081116728951,
+            "macro_f1": 0.8008465110723253,
+            "confusion_matrix": {
+              "class_names": [
+                "Non-Toxic",
+                "Toxic"
+              ],
+              "rows_actual_columns_predicted": [
+                [
+                  8296,
+                  830
+                ],
+                [
+                  617,
+                  1551
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "fold": 2,
+          "train_rows": 22588,
+          "validation_rows": 11294,
+          "normalized_group_overlap": 0,
+          "metrics": {
+            "accuracy": 0.868337170178856,
+            "per_class": {
+              "0": {
+                "name": "Non-Toxic",
+                "precision": 0.9359662139025225,
+                "recall": 0.898531667762437,
+                "f1": 0.9168669983787108,
+                "support": 9126
+              },
+              "1": {
+                "name": "Toxic",
+                "precision": 0.6344255823134622,
+                "recall": 0.7412361623616236,
+                "f1": 0.6836843224845778,
+                "support": 2168
+              }
+            },
+            "toxic_precision": 0.6344255823134622,
+            "toxic_recall": 0.7412361623616236,
+            "toxic_f1": 0.6836843224845778,
+            "macro_f1": 0.8002756604316443,
+            "confusion_matrix": {
+              "class_names": [
+                "Non-Toxic",
+                "Toxic"
+              ],
+              "rows_actual_columns_predicted": [
+                [
+                  8200,
+                  926
+                ],
+                [
+                  561,
+                  1607
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "fold": 3,
+          "train_rows": 22588,
+          "validation_rows": 11294,
+          "normalized_group_overlap": 0,
+          "metrics": {
+            "accuracy": 0.8710819904374004,
+            "per_class": {
+              "0": {
+                "name": "Non-Toxic",
+                "precision": 0.9295474910394266,
+                "recall": 0.9093797939951787,
+                "f1": 0.9193530519552454,
+                "support": 9126
+              },
+              "1": {
+                "name": "Toxic",
+                "precision": 0.650464919695689,
+                "recall": 0.709870848708487,
+                "f1": 0.6788707543008381,
+                "support": 2168
+              }
+            },
+            "toxic_precision": 0.650464919695689,
+            "toxic_recall": 0.709870848708487,
+            "toxic_f1": 0.6788707543008381,
+            "macro_f1": 0.7991119031280418,
+            "confusion_matrix": {
+              "class_names": [
+                "Non-Toxic",
+                "Toxic"
+              ],
+              "rows_actual_columns_predicted": [
+                [
+                  8299,
+                  827
+                ],
+                [
+                  629,
+                  1539
+                ]
+              ]
+            }
+          }
+        }
+      ],
+      "out_of_fold_metrics": {
+        "accuracy": 0.8704326781181748,
+        "per_class": {
+          "0": {
+            "name": "Non-Toxic",
+            "precision": 0.9320727764829712,
+            "recall": 0.9056541748849442,
+            "f1": 0.9186735828084476,
+            "support": 27378
+          },
+          "1": {
+            "name": "Toxic",
+            "precision": 0.6451923076923077,
+            "recall": 0.7221709717097171,
+            "f1": 0.6815147997678468,
+            "support": 6504
+          }
+        },
+        "toxic_precision": 0.6451923076923077,
+        "toxic_recall": 0.7221709717097171,
+        "toxic_f1": 0.6815147997678468,
+        "macro_f1": 0.8000941912881472,
+        "confusion_matrix": {
+          "class_names": [
+            "Non-Toxic",
+            "Toxic"
+          ],
+          "rows_actual_columns_predicted": [
+            [
+              24795,
+              2583
+            ],
+            [
+              1807,
+              4697
+            ]
+          ]
+        }
+      }
+    },
+    "linear_svm_C1_unweighted": {
+      "model_type": "linear_svm",
+      "C": 1.0,
+      "class_weight": null,
+      "method": "3-fold StratifiedGroupKFold by normalized text",
+      "random_state": 42,
+      "folds": [
+        {
+          "fold": 1,
+          "train_rows": 22588,
+          "validation_rows": 11294,
+          "normalized_group_overlap": 0,
+          "metrics": {
+            "accuracy": 0.8972020541880644,
+            "per_class": {
+              "0": {
+                "name": "Non-Toxic",
+                "precision": 0.9134226097788851,
+                "recall": 0.9641683103221564,
+                "f1": 0.9381097073404766,
+                "support": 9126
+              },
+              "1": {
+                "name": "Toxic",
+                "precision": 0.8031306441902468,
+                "recall": 0.6153136531365314,
+                "f1": 0.6967876730216767,
+                "support": 2168
+              }
+            },
+            "toxic_precision": 0.8031306441902468,
+            "toxic_recall": 0.6153136531365314,
+            "toxic_f1": 0.6967876730216767,
+            "macro_f1": 0.8174486901810767,
+            "confusion_matrix": {
+              "class_names": [
+                "Non-Toxic",
+                "Toxic"
+              ],
+              "rows_actual_columns_predicted": [
+                [
+                  8799,
+                  327
+                ],
+                [
+                  834,
+                  1334
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "fold": 2,
+          "train_rows": 22588,
+          "validation_rows": 11294,
+          "normalized_group_overlap": 0,
+          "metrics": {
+            "accuracy": 0.8975562245440056,
+            "per_class": {
+              "0": {
+                "name": "Non-Toxic",
+                "precision": 0.9167451103441062,
+                "recall": 0.9604426912119219,
+                "f1": 0.9380852999411355,
+                "support": 9126
+              },
+              "1": {
+                "name": "Toxic",
+                "precision": 0.7916907097518754,
+                "recall": 0.6328413284132841,
+                "f1": 0.7034093822096898,
+                "support": 2168
+              }
+            },
+            "toxic_precision": 0.7916907097518754,
+            "toxic_recall": 0.6328413284132841,
+            "toxic_f1": 0.7034093822096898,
+            "macro_f1": 0.8207473410754127,
+            "confusion_matrix": {
+              "class_names": [
+                "Non-Toxic",
+                "Toxic"
+              ],
+              "rows_actual_columns_predicted": [
+                [
+                  8765,
+                  361
+                ],
+                [
+                  796,
+                  1372
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "fold": 3,
+          "train_rows": 22588,
+          "validation_rows": 11294,
+          "normalized_group_overlap": 0,
+          "metrics": {
+            "accuracy": 0.8930405525057553,
+            "per_class": {
+              "0": {
+                "name": "Non-Toxic",
+                "precision": 0.9100890822457013,
+                "recall": 0.9627438088976551,
+                "f1": 0.9356762513312034,
+                "support": 9126
+              },
+              "1": {
+                "name": "Toxic",
+                "precision": 0.7926829268292683,
+                "recall": 0.5996309963099631,
+                "f1": 0.6827731092436975,
+                "support": 2168
+              }
+            },
+            "toxic_precision": 0.7926829268292683,
+            "toxic_recall": 0.5996309963099631,
+            "toxic_f1": 0.6827731092436975,
+            "macro_f1": 0.8092246802874504,
+            "confusion_matrix": {
+              "class_names": [
+                "Non-Toxic",
+                "Toxic"
+              ],
+              "rows_actual_columns_predicted": [
+                [
+                  8786,
+                  340
+                ],
+                [
+                  868,
+                  1300
+                ]
+              ]
+            }
+          }
+        }
+      ],
+      "out_of_fold_metrics": {
+        "accuracy": 0.8959329437459418,
+        "per_class": {
+          "0": {
+            "name": "Non-Toxic",
+            "precision": 0.91340820854132,
+            "recall": 0.9624516034772445,
+            "f1": 0.9372887987763668,
+            "support": 27378
+          },
+          "1": {
+            "name": "Toxic",
+            "precision": 0.7957886372665872,
+            "recall": 0.6159286592865929,
+            "f1": 0.6944011093777085,
+            "support": 6504
+          }
+        },
+        "toxic_precision": 0.7957886372665872,
+        "toxic_recall": 0.6159286592865929,
+        "toxic_f1": 0.6944011093777085,
+        "macro_f1": 0.8158449540770376,
+        "confusion_matrix": {
+          "class_names": [
+            "Non-Toxic",
+            "Toxic"
+          ],
+          "rows_actual_columns_predicted": [
+            [
+              26350,
+              1028
+            ],
+            [
+              2498,
+              4006
+            ]
+          ]
+        }
+      }
+    },
+    "linear_svm_C1_balanced": {
+      "model_type": "linear_svm",
+      "C": 1.0,
+      "class_weight": "balanced",
+      "method": "3-fold StratifiedGroupKFold by normalized text",
+      "random_state": 42,
+      "folds": [
+        {
+          "fold": 1,
+          "train_rows": 22588,
+          "validation_rows": 11294,
+          "normalized_group_overlap": 0,
+          "metrics": {
+            "accuracy": 0.8693996812466797,
+            "per_class": {
+              "0": {
+                "name": "Non-Toxic",
+                "precision": 0.9293972387473342,
+                "recall": 0.9072978303747534,
+                "f1": 0.9182145827557527,
+                "support": 9126
+              },
+              "1": {
+                "name": "Toxic",
+                "precision": 0.6452830188679245,
+                "recall": 0.709870848708487,
+                "f1": 0.676037777289699,
+                "support": 2168
+              }
+            },
+            "toxic_precision": 0.6452830188679245,
+            "toxic_recall": 0.709870848708487,
+            "toxic_f1": 0.676037777289699,
+            "macro_f1": 0.7971261800227258,
+            "confusion_matrix": {
+              "class_names": [
+                "Non-Toxic",
+                "Toxic"
+              ],
+              "rows_actual_columns_predicted": [
+                [
+                  8280,
+                  846
+                ],
+                [
+                  629,
+                  1539
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "fold": 2,
+          "train_rows": 22588,
+          "validation_rows": 11294,
+          "normalized_group_overlap": 0,
+          "metrics": {
+            "accuracy": 0.8642642110855321,
+            "per_class": {
+              "0": {
+                "name": "Non-Toxic",
+                "precision": 0.9341337907375643,
+                "recall": 0.8951347797501643,
+                "f1": 0.9142185663924794,
+                "support": 9126
+              },
+              "1": {
+                "name": "Toxic",
+                "precision": 0.6245586504511573,
+                "recall": 0.7343173431734318,
+                "f1": 0.6750052999788001,
+                "support": 2168
+              }
+            },
+            "toxic_precision": 0.6245586504511573,
+            "toxic_recall": 0.7343173431734318,
+            "toxic_f1": 0.6750052999788001,
+            "macro_f1": 0.7946119331856398,
+            "confusion_matrix": {
+              "class_names": [
+                "Non-Toxic",
+                "Toxic"
+              ],
+              "rows_actual_columns_predicted": [
+                [
+                  8169,
+                  957
+                ],
+                [
+                  576,
+                  1592
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "fold": 3,
+          "train_rows": 22588,
+          "validation_rows": 11294,
+          "normalized_group_overlap": 0,
+          "metrics": {
+            "accuracy": 0.8659465202762529,
+            "per_class": {
+              "0": {
+                "name": "Non-Toxic",
+                "precision": 0.9276404494382022,
+                "recall": 0.9046679815910585,
+                "f1": 0.9160102074780873,
+                "support": 9126
+              },
+              "1": {
+                "name": "Toxic",
+                "precision": 0.6365914786967418,
+                "recall": 0.7029520295202952,
+                "f1": 0.6681280140289346,
+                "support": 2168
+              }
+            },
+            "toxic_precision": 0.6365914786967418,
+            "toxic_recall": 0.7029520295202952,
+            "toxic_f1": 0.6681280140289346,
+            "macro_f1": 0.7920691107535109,
+            "confusion_matrix": {
+              "class_names": [
+                "Non-Toxic",
+                "Toxic"
+              ],
+              "rows_actual_columns_predicted": [
+                [
+                  8256,
+                  870
+                ],
+                [
+                  644,
+                  1524
+                ]
+              ]
+            }
+          }
+        }
+      ],
+      "out_of_fold_metrics": {
+        "accuracy": 0.8665368042028215,
+        "per_class": {
+          "0": {
+            "name": "Non-Toxic",
+            "precision": 0.930368306093244,
+            "recall": 0.9023668639053254,
+            "f1": 0.9161536749981458,
+            "support": 27378
+          },
+          "1": {
+            "name": "Toxic",
+            "precision": 0.6352347161572053,
+            "recall": 0.7157134071340714,
+            "f1": 0.6730769230769231,
+            "support": 6504
+          }
+        },
+        "toxic_precision": 0.6352347161572053,
+        "toxic_recall": 0.7157134071340714,
+        "toxic_f1": 0.6730769230769231,
+        "macro_f1": 0.7946152990375345,
+        "confusion_matrix": {
+          "class_names": [
+            "Non-Toxic",
+            "Toxic"
+          ],
+          "rows_actual_columns_predicted": [
+            [
+              24705,
+              2673
+            ],
+            [
+              1849,
+              4655
+            ]
+          ]
+        }
+      }
+    }
+  },
+  "selected_models": {
+    "logistic_regression": {
+      "selected_hyperparameters": {
+        "C": 1.0,
+        "class_weight": "balanced"
+      },
+      "cross_validation": {
+        "method": "3-fold StratifiedGroupKFold by normalized text",
+        "random_state": 42,
+        "folds": [
+          {
+            "fold": 1,
+            "train_rows": 22588,
+            "validation_rows": 11294,
+            "normalized_group_overlap": 0,
+            "metrics": {
+              "accuracy": 0.8754205772976802,
+              "per_class": {
+                "0": {
+                  "name": "Non-Toxic",
+                  "precision": 0.9354620331716124,
+                  "recall": 0.908503177733947,
+                  "f1": 0.921785535605092,
+                  "support": 9126
+                },
+                "1": {
+                  "name": "Toxic",
+                  "precision": 0.6565199506375977,
+                  "recall": 0.7361623616236163,
+                  "f1": 0.6940639269406392,
+                  "support": 2168
+                }
+              },
+              "toxic_precision": 0.6565199506375977,
+              "toxic_recall": 0.7361623616236163,
+              "toxic_f1": 0.6940639269406392,
+              "macro_f1": 0.8079247312728657,
+              "confusion_matrix": {
+                "class_names": [
+                  "Non-Toxic",
+                  "Toxic"
+                ],
+                "rows_actual_columns_predicted": [
+                  [
+                    8291,
+                    835
+                  ],
+                  [
+                    572,
+                    1596
+                  ]
+                ]
+              }
+            }
+          },
+          {
+            "fold": 2,
+            "train_rows": 22588,
+            "validation_rows": 11294,
+            "normalized_group_overlap": 0,
+            "metrics": {
+              "accuracy": 0.8679829998229148,
+              "per_class": {
+                "0": {
+                  "name": "Non-Toxic",
+                  "precision": 0.9382390081506141,
+                  "recall": 0.8955730878807802,
+                  "f1": 0.9164097101530526,
+                  "support": 9126
+                },
+                "1": {
+                  "name": "Toxic",
+                  "precision": 0.6310491676345334,
+                  "recall": 0.7518450184501845,
+                  "f1": 0.686171332351084,
+                  "support": 2168
+                }
+              },
+              "toxic_precision": 0.6310491676345334,
+              "toxic_recall": 0.7518450184501845,
+              "toxic_f1": 0.686171332351084,
+              "macro_f1": 0.8012905212520682,
+              "confusion_matrix": {
+                "class_names": [
+                  "Non-Toxic",
+                  "Toxic"
+                ],
+                "rows_actual_columns_predicted": [
+                  [
+                    8173,
+                    953
+                  ],
+                  [
+                    538,
+                    1630
+                  ]
+                ]
+              }
+            }
+          },
+          {
+            "fold": 3,
+            "train_rows": 22588,
+            "validation_rows": 11294,
+            "normalized_group_overlap": 0,
+            "metrics": {
+              "accuracy": 0.8673632017000177,
+              "per_class": {
+                "0": {
+                  "name": "Non-Toxic",
+                  "precision": 0.933803457688808,
+                  "recall": 0.8996274380889766,
+                  "f1": 0.9163969192990289,
+                  "support": 9126
+                },
+                "1": {
+                  "name": "Toxic",
+                  "precision": 0.6338928856914469,
+                  "recall": 0.731549815498155,
+                  "f1": 0.6792291220556745,
+                  "support": 2168
+                }
+              },
+              "toxic_precision": 0.6338928856914469,
+              "toxic_recall": 0.731549815498155,
+              "toxic_f1": 0.6792291220556745,
+              "macro_f1": 0.7978130206773517,
+              "confusion_matrix": {
+                "class_names": [
+                  "Non-Toxic",
+                  "Toxic"
+                ],
+                "rows_actual_columns_predicted": [
+                  [
+                    8210,
+                    916
+                  ],
+                  [
+                    582,
+                    1586
+                  ]
+                ]
+              }
+            }
+          }
+        ],
+        "out_of_fold_metrics": {
+          "accuracy": 0.8702555929402043,
+          "per_class": {
+            "0": {
+              "name": "Non-Toxic",
+              "precision": 0.9358264431464766,
+              "recall": 0.9012345679012346,
+              "f1": 0.9182048228639476,
+              "support": 27378
+            },
+            "1": {
+              "name": "Toxic",
+              "precision": 0.640234167110165,
+              "recall": 0.7398523985239852,
+              "f1": 0.6864479315263908,
+              "support": 6504
+            }
+          },
+          "toxic_precision": 0.640234167110165,
+          "toxic_recall": 0.7398523985239852,
+          "toxic_f1": 0.6864479315263908,
+          "macro_f1": 0.8023263771951692,
+          "confusion_matrix": {
+            "class_names": [
+              "Non-Toxic",
+              "Toxic"
+            ],
+            "rows_actual_columns_predicted": [
+              [
+                24674,
+                2704
+              ],
+              [
+                1692,
+                4812
+              ]
+            ]
+          }
+        }
+      },
+      "holdout": {
+        "accuracy": 0.8662653446647781,
+        "per_class": {
+          "0": {
+            "name": "Non-Toxic",
+            "precision": 0.9410129709697344,
+            "recall": 0.8902848794740686,
+            "f1": 0.9149463253509497,
+            "support": 6845
+          },
+          "1": {
+            "name": "Toxic",
+            "precision": 0.62374749498998,
+            "recall": 0.7652120467117394,
+            "f1": 0.6872757383383936,
+            "support": 1627
+          }
+        },
+        "toxic_precision": 0.62374749498998,
+        "toxic_recall": 0.7652120467117394,
+        "toxic_f1": 0.6872757383383936,
+        "macro_f1": 0.8011110318446717,
+        "confusion_matrix": {
+          "class_names": [
+            "Non-Toxic",
+            "Toxic"
+          ],
+          "rows_actual_columns_predicted": [
+            [
+              6094,
+              751
+            ],
+            [
+              382,
+              1245
+            ]
+          ]
+        }
+      }
+    },
+    "linear_svm": {
+      "selected_hyperparameters": {
+        "C": 0.5,
+        "class_weight": null
+      },
+      "cross_validation": {
+        "method": "3-fold StratifiedGroupKFold by normalized text",
+        "random_state": 42,
+        "folds": [
+          {
+            "fold": 1,
+            "train_rows": 22588,
+            "validation_rows": 11294,
+            "normalized_group_overlap": 0,
+            "metrics": {
+              "accuracy": 0.9018948114042855,
+              "per_class": {
+                "0": {
+                  "name": "Non-Toxic",
+                  "precision": 0.912109375,
+                  "recall": 0.9722770107385492,
+                  "f1": 0.9412326296807043,
+                  "support": 9126
+                },
+                "1": {
+                  "name": "Toxic",
+                  "precision": 0.8384418901660281,
+                  "recall": 0.6056273062730627,
+                  "f1": 0.7032672737011249,
+                  "support": 2168
+                }
+              },
+              "toxic_precision": 0.8384418901660281,
+              "toxic_recall": 0.6056273062730627,
+              "toxic_f1": 0.7032672737011249,
+              "macro_f1": 0.8222499516909145,
+              "confusion_matrix": {
+                "class_names": [
+                  "Non-Toxic",
+                  "Toxic"
+                ],
+                "rows_actual_columns_predicted": [
+                  [
+                    8873,
+                    253
+                  ],
+                  [
+                    855,
+                    1313
+                  ]
+                ]
+              }
+            }
+          },
+          {
+            "fold": 2,
+            "train_rows": 22588,
+            "validation_rows": 11294,
+            "normalized_group_overlap": 0,
+            "metrics": {
+              "accuracy": 0.9010979281034177,
+              "per_class": {
+                "0": {
+                  "name": "Non-Toxic",
+                  "precision": 0.9151031408728102,
+                  "recall": 0.9673460442691212,
+                  "f1": 0.9404996537580568,
+                  "support": 9126
+                },
+                "1": {
+                  "name": "Toxic",
+                  "precision": 0.8190649666059502,
+                  "recall": 0.6222324723247232,
+                  "f1": 0.7072083879423329,
+                  "support": 2168
+                }
+              },
+              "toxic_precision": 0.8190649666059502,
+              "toxic_recall": 0.6222324723247232,
+              "toxic_f1": 0.7072083879423329,
+              "macro_f1": 0.8238540208501948,
+              "confusion_matrix": {
+                "class_names": [
+                  "Non-Toxic",
+                  "Toxic"
+                ],
+                "rows_actual_columns_predicted": [
+                  [
+                    8828,
+                    298
+                  ],
+                  [
+                    819,
+                    1349
+                  ]
+                ]
+              }
+            }
+          },
+          {
+            "fold": 3,
+            "train_rows": 22588,
+            "validation_rows": 11294,
+            "normalized_group_overlap": 0,
+            "metrics": {
+              "accuracy": 0.8948999468744466,
+              "per_class": {
+                "0": {
+                  "name": "Non-Toxic",
+                  "precision": 0.9081748071979434,
+                  "recall": 0.967784352399737,
+                  "f1": 0.9370325181687974,
+                  "support": 9126
+                },
+                "1": {
+                  "name": "Toxic",
+                  "precision": 0.8126195028680688,
+                  "recall": 0.5880996309963099,
+                  "f1": 0.6823655338506823,
+                  "support": 2168
+                }
+              },
+              "toxic_precision": 0.8126195028680688,
+              "toxic_recall": 0.5880996309963099,
+              "toxic_f1": 0.6823655338506823,
+              "macro_f1": 0.8096990260097399,
+              "confusion_matrix": {
+                "class_names": [
+                  "Non-Toxic",
+                  "Toxic"
+                ],
+                "rows_actual_columns_predicted": [
+                  [
+                    8832,
+                    294
+                  ],
+                  [
+                    893,
+                    1275
+                  ]
+                ]
+              }
+            }
+          }
+        ],
+        "out_of_fold_metrics": {
+          "accuracy": 0.8992975621273833,
+          "per_class": {
+            "0": {
+              "name": "Non-Toxic",
+              "precision": 0.911786941580756,
+              "recall": 0.9691358024691358,
+              "f1": 0.939587095860335,
+              "support": 27378
+            },
+            "1": {
+              "name": "Toxic",
+              "precision": 0.8232956921790046,
+              "recall": 0.605319803198032,
+              "f1": 0.6976785397838029,
+              "support": 6504
+            }
+          },
+          "toxic_precision": 0.8232956921790046,
+          "toxic_recall": 0.605319803198032,
+          "toxic_f1": 0.6976785397838029,
+          "macro_f1": 0.818632817822069,
+          "confusion_matrix": {
+            "class_names": [
+              "Non-Toxic",
+              "Toxic"
+            ],
+            "rows_actual_columns_predicted": [
+              [
+                26533,
+                845
+              ],
+              [
+                2567,
+                3937
+              ]
+            ]
+          }
+        }
+      },
+      "holdout": {
+        "accuracy": 0.908876298394712,
+        "per_class": {
+          "0": {
+            "name": "Non-Toxic",
+            "precision": 0.9194640143666252,
+            "recall": 0.9723886048210373,
+            "f1": 0.9451860266969611,
+            "support": 6845
+          },
+          "1": {
+            "name": "Toxic",
+            "precision": 0.8467153284671532,
+            "recall": 0.6416717885679164,
+            "f1": 0.73006993006993,
+            "support": 1627
+          }
+        },
+        "toxic_precision": 0.8467153284671532,
+        "toxic_recall": 0.6416717885679164,
+        "toxic_f1": 0.73006993006993,
+        "macro_f1": 0.8376279783834455,
+        "confusion_matrix": {
+          "class_names": [
+            "Non-Toxic",
+            "Toxic"
+          ],
+          "rows_actual_columns_predicted": [
+            [
+              6656,
+              189
+            ],
+            [
+              583,
+              1044
+            ]
+          ]
+        }
+      }
+    }
+  },
+  "selected_final_model": "linear_svm",
+  "deployment_fit": {
+    "partition": "all nonempty rows after the holdout evaluation",
+    "bundle": "ml\\gametox_binary_model_bundle.pkl",
+    "vectorizer": "ml\\gametox_binary_tfidf_vectorizer.pkl",
+    "logistic_regression": "ml\\gametox_binary_logistic_regression.pkl",
+    "linear_svm": "ml\\gametox_binary_linear_svm.pkl"
+  }
+}

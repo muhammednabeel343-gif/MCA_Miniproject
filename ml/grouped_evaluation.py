@@ -7,12 +7,14 @@ import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import (
     accuracy_score,
+    classification_report,
     confusion_matrix,
     f1_score,
     precision_recall_fscore_support,
     precision_score,
     recall_score,
 )
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedGroupKFold
 from sklearn.svm import LinearSVC
 
@@ -24,6 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE_PATH = ROOT / "dataset" / "train.csv"
 RESULTS_DIR = ROOT / "results"
 CANDIDATE_DIR = ROOT / "ml" / "artifacts" / "grouped_candidates"
+MODEL_BUNDLE_PATH = ROOT / "ml" / "gametox_model_bundle.pkl"
 RANDOM_STATE = 42
 HOLDOUT_FOLDS = 5
 HOLDOUT_FOLD = 0
@@ -138,6 +141,8 @@ def make_vectorizer():
 
 
 def make_model(candidate, labels):
+    if candidate == "logistic_regression":
+        return LogisticRegression(max_iter=1000, random_state=RANDOM_STATE)
     if candidate == "unweighted_bigram":
         return LinearSVC(random_state=RANDOM_STATE)
     if candidate == "balanced_C1_bigram":
@@ -225,6 +230,28 @@ def metric_summary(actual, predicted):
             "rows_actual_columns_predicted": matrix.tolist(),
         },
     }
+
+
+def save_grouped_reports(model_key, model_title, actual, predicted):
+    results_dir = RESULTS_DIR
+    labels = [CLASS_NAMES[label] for label in CLASS_IDS]
+    report = classification_report(
+        actual,
+        predicted,
+        labels=CLASS_IDS,
+        target_names=labels,
+        digits=4,
+        zero_division=0,
+    )
+    (results_dir / f"grouped_classification_report_{model_key}.txt").write_text(
+        f"{model_title} grouped held-out test report\n\n{report}",
+        encoding="utf-8",
+    )
+    matrix = confusion_matrix(actual, predicted, labels=CLASS_IDS)
+    pd.DataFrame(matrix, index=labels, columns=labels).to_csv(
+        results_dir / f"grouped_confusion_matrix_{model_key}.csv",
+        index_label="actual",
+    )
 
 
 def grouped_cross_validation(training, candidate):
@@ -320,11 +347,12 @@ def main():
             f"Grouped holdout contains {len(shared_groups)} shared text groups"
         )
 
-    candidate_names = (
+    svm_candidate_names = (
         "unweighted_bigram",
         "balanced_C1_bigram",
         "balanced_C0.5_bigram",
     )
+    candidate_names = ("logistic_regression", *svm_candidate_names)
     candidate_dir = CANDIDATE_DIR
     candidate_dir.mkdir(parents=True, exist_ok=True)
     training.to_csv(candidate_dir / "grouped_train.csv", index=False)
@@ -339,6 +367,17 @@ def main():
         model = make_model(candidate, training["label"].to_numpy())
         model.fit(train_features, training["label"].to_numpy())
         predictions = model.predict(test_features)
+        report_key = (
+            "lr"
+            if candidate == "logistic_regression"
+            else f"svm_{candidate}"
+        )
+        save_grouped_reports(
+            report_key,
+            candidate.replace("_", " ").title(),
+            testing["label"].to_numpy(),
+            predictions,
+        )
         test_metrics = metric_summary(testing["label"].to_numpy(), predictions)
         test_metrics["normalized_group_overlap_train_test"] = len(shared_groups)
         results[candidate] = {
@@ -382,8 +421,55 @@ def main():
             }
         )
 
+    selected_svm_candidate = max(
+        svm_candidate_names,
+        key=lambda candidate: results[candidate][
+            "grouped_cross_validation_on_training_only"
+        ]["out_of_fold_metrics"]["macro_recall"],
+    )
+
     vectorizer_path = candidate_dir / "grouped_tfidf_vectorizer.joblib"
     joblib.dump(vectorizer, vectorizer_path)
+
+    final_vectorizer = make_vectorizer()
+    final_features = final_vectorizer.fit_transform(modeling_data["cleaned_text"])
+    final_labels = modeling_data["label"].to_numpy()
+    final_lr_model = make_model("logistic_regression", final_labels)
+    final_lr_model.fit(final_features, final_labels)
+    final_svm_model = make_model(selected_svm_candidate, final_labels)
+    final_svm_model.fit(final_features, final_labels)
+    joblib.dump(
+        {
+            "format_version": 1,
+            "class_names": CLASS_NAMES,
+            "preprocessor": "ml/preprocessing.py:clean_text",
+            "selection": {
+                "selected_svm_candidate": selected_svm_candidate,
+                "metric": "grouped training-only cross-validation macro recall",
+                "cross_validation_metrics": {
+                    candidate: results[candidate][
+                        "grouped_cross_validation_on_training_only"
+                    ]["out_of_fold_metrics"]
+                    for candidate in svm_candidate_names
+                },
+            },
+            "final_fit": {
+                "partition": "all nonempty normalized source rows after evaluation",
+                "rows": int(len(modeling_data)),
+                "class_counts": {
+                    str(label): int((modeling_data["label"] == label).sum())
+                    for label in CLASS_IDS
+                },
+            },
+            "vectorizer": final_vectorizer,
+            "models": {
+                "logistic_regression": final_lr_model,
+                "linear_svm": final_svm_model,
+            },
+        },
+        MODEL_BUNDLE_PATH,
+    )
+
     manifest = {
         "experiment": "GameTox grouped evaluation",
         "source": str(SOURCE_PATH.relative_to(ROOT)),
@@ -423,6 +509,17 @@ def main():
             "artifact": str(vectorizer_path.relative_to(ROOT)),
         },
         "candidate_artifact_directory": str(candidate_dir.relative_to(ROOT)),
+        "deployment_bundle": {
+            "artifact": str(MODEL_BUNDLE_PATH.relative_to(ROOT)),
+            "selected_svm_candidate": selected_svm_candidate,
+            "selection_metric": (
+                "grouped training-only cross-validation macro recall"
+            ),
+            "final_fit_rows": int(len(modeling_data)),
+            "final_fit_excluded_empty_rows": int(
+                source["cleaned_text"].eq("").sum()
+            ),
+        },
         "data_quality_report": str(quality_path.relative_to(ROOT)),
         "models": results,
     }
@@ -491,6 +588,7 @@ def main():
     print("Model comparison:", comparison_path)
     print("Detailed evaluation:", results_path)
     print("Candidate artifacts saved separately under:", candidate_dir)
+    print("Deployment bundle saved to:", MODEL_BUNDLE_PATH)
 
 
 if __name__ == "__main__":

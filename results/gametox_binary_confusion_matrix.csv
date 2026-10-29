@@ -1,0 +1,3 @@
+actual,logistic_regression_predicted_non_toxic,logistic_regression_predicted_toxic,linear_svm_predicted_non_toxic,linear_svm_predicted_toxic
+Non-Toxic,6094,751,6656,189
+Toxic,382,1245,583,1044

@@ -65,7 +65,7 @@ boundary_messages = [
 # FUNCTION TO TEST MESSAGES
 # =====================================================
 
-def test_messages(title, messages):
+def display_test_messages(title, messages):
 
     print("\n")
     print("=" * 60)
@@ -103,17 +103,17 @@ def test_messages(title, messages):
 
 if __name__ == "__main__":
 
-    test_messages(
+    display_test_messages(
         "TEST 1 - NORMAL GAMING CHAT",
         normal_chat_messages
     )
 
-    test_messages(
+    display_test_messages(
         "TEST 2 - CLEARLY TOXIC CHAT",
         toxic_messages
     )
 
-    test_messages(
+    display_test_messages(
         "TEST 3 - MIXED / BOUNDARY CASES",
         boundary_messages
     )

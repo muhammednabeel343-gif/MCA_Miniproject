@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { API_BASE_URL } from "../config";
 import { authHeaders } from "../utils/auth";
+import { getPredictionLabel, isToxicStatus } from "../utils/modelScore";
 
 export default function Profile() {
   const [stats, setStats] = useState(null);
@@ -11,25 +12,26 @@ export default function Profile() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchStats();
-  }, []);
-
-  const fetchStats = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/users/me/stats`, {
-        headers: authHeaders(),
+    let active = true;
+    fetch(`${API_BASE_URL}/users/me/stats`, { headers: authHeaders() })
+      .then((response) => {
+        if (!response.ok) throw new Error("Could not load stats.");
+        return response.json();
+      })
+      .then((data) => {
+        if (active) setStats(data);
+      })
+      .catch((err) => {
+        if (active) setError(err.message);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
       });
 
-      if (!response.ok) throw new Error("Could not load stats.");
-
-      const data = await response.json();
-      setStats(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+    return () => {
+      active = false;
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -118,16 +120,27 @@ export default function Profile() {
             <p style={styles.emptyText}>No recent chat logs found.</p>
           ) : (
             <div className="record-scroll activity-list" style={styles.msgList}>
-              {filteredActivities.map((message, index) => (
-                <div key={index} style={styles.msgItem}>
+              {filteredActivities.map((message, index) => {
+                const label = getPredictionLabel(message.prediction, message.status);
+
+                return (
+                  <div key={index} style={styles.msgItem}>
                   <div style={styles.msgItemHeader}>
                     <span style={styles.msgGame}>{message.game_name || "Lobby"}</span>
-                    <span className={`badge ${message.status === "Safe" ? "badge-safe" : "badge-toxic"}`} style={{ fontSize: "10px" }}>{message.prediction}</span>
+                    {label && (
+                      <span
+                        className={`badge ${isToxicStatus(label) ? "badge-toxic" : "badge-safe"}`}
+                        style={{ fontSize: "10px" }}
+                      >
+                        {label}
+                      </span>
+                    )}
                   </div>
                   <p style={styles.msgBody}>&quot;{message.message}&quot;</p>
                   <span style={styles.msgDate}>{new Date(message.created_at).toLocaleString()}</span>
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

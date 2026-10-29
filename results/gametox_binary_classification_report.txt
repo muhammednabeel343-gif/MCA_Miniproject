@@ -1,0 +1,21 @@
+Binary GameTox grouped holdout classification reports
+
+Logistic Regression — grouped holdout
+              precision    recall  f1-score   support
+
+   Non-Toxic     0.9410    0.8903    0.9149      6845
+       Toxic     0.6237    0.7652    0.6873      1627
+
+    accuracy                         0.8663      8472
+   macro avg     0.7824    0.8277    0.8011      8472
+weighted avg     0.8801    0.8663    0.8712      8472
+
+Linear Svm — grouped holdout
+              precision    recall  f1-score   support
+
+   Non-Toxic     0.9195    0.9724    0.9452      6845
+       Toxic     0.8467    0.6417    0.7301      1627
+
+    accuracy                         0.9089      8472
+   macro avg     0.8831    0.8070    0.8376      8472
+weighted avg     0.9055    0.9089    0.9039      8472

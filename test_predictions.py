@@ -1,87 +1,130 @@
+import os
+
 from toxic_backend.app.services.model_service import predict_message
 
-test_messages = [
-    # 0 - Non-Toxic
-    ("Good game everyone", "Non-Toxic"),
-    ("Nice teamwork, well played", "Non-Toxic"),
-    ("I will kill it in the game", "Non-Toxic"),
+# Set TOXIC_MODEL_MODE=binary to evaluate the binary bundle; the six-class
+# expected annotations remain unchanged below and are converted only for scoring.
+MODEL_MODE = os.getenv("TOXIC_MODEL_MODE", "six_class").strip().lower()
 
-    # 1 - Insults and Flaming
-    ("You are a fool", "Insults and Flaming"),
-    ("Fuck you", "Insults and Flaming"),
-    ("You are terrible at this game", "Insults and Flaming"),
+# A continuous gaming conversation between two friends.
+# Expected progression: peaceful -> frustration -> toxicity -> escalation
 
-    # 2 - Other Offensive Texts
-    ("Shut up and stop talking nonsense", "Other Offensive Texts"),
-    ("Your comments are disgusting", "Other Offensive Texts"),
-    ("That was a stupid and annoying comment", "Other Offensive Texts"),
+conversation = [
+    # Stage 1: Peaceful gaming — Non-Toxic
+    (1, "Alex", "Non-Toxic",
+     "Hey bro, ready for another match?"),
+    (2, "Sam", "Non-Toxic",
+     "Yeah, let's play together and have some fun."),
+    (3, "Alex", "Non-Toxic",
+     "Nice teamwork in the last round, well played!"),
+    (4, "Sam", "Non-Toxic",
+     "Thanks bro, let's try to win this one too."),
+    (5, "Alex", "Non-Toxic",
+     "I will kill it in this game!"),
 
-    # 3 - Hate and Harassment
-    ("People like you do not belong here", "Hate and Harassment"),
-    ("Everyone should target and harass that player", "Hate and Harassment"),
-    ("You are not welcome in this community", "Hate and Harassment"),
+    # Stage 2: Frustration begins
+    (6, "Sam", "Other Offensive Texts",
+     "That was a stupid move, why did you do that?"),
+    (7, "Alex", "Insults and Flaming",
+     "Stop blaming me, you are a fool."),
+    (8, "Sam", "Insults and Flaming",
+     "You are terrible at this game."),
+    (9, "Alex", "Insults and Flaming",
+     "Fuck you, you ruined the whole match."),
+    (10, "Sam", "Other Offensive Texts",
+     "Shut up and stop talking nonsense."),
 
-    # 4 - Threats
-    ("I will kill you", "Threats"),
-    ("I am going to hurt you", "Threats"),
-    ("You will regret this, I will get you", "Threats"),
+    # Stage 3: Exclusion and harassment
+    (11, "Alex", "Hate and Harassment",
+     "People like you do not belong in our team."),
+    (12, "Sam", "Hate and Harassment",
+     "Everyone should target and harass that player."),
+    (13, "Alex", "Hate and Harassment",
+     "You are not welcome in this community."),
+    (14, "Sam", "Hate and Harassment",
+     "Let's make sure nobody wants to play with you again."),
 
-    # 5 - Extremism
-    ("Violence is necessary to achieve extremist goals", "Extremism"),
-    ("Our extremist movement wants to spread its ideology", "Extremism"),
-    ("Support the use of violence for extremist causes", "Extremism"),
+    # Stage 4: Direct threats
+    (15, "Alex", "Threats",
+     "I will hurt you if you keep doing this."),
+    (16, "Sam", "Threats",
+     "You will regret this, I will get you."),
+    (17, "Alex", "Threats",
+     "I will find you and make you pay for this."),
+
+    # Stage 5: Extremist content
+    (18, "Sam", "Extremism",
+     "Violence is necessary to achieve extremist goals."),
+    (19, "Alex", "Extremism",
+     "Our extremist movement wants to spread its ideology."),
+    (20, "Sam", "Extremism",
+     "Support the use of violence for extremist causes."),
 ]
 
 correct = 0
-total = len(test_messages)
+total = len(conversation)
 
-for message, expected in test_messages:
+for turn, speaker, expected, message in conversation:
     result = predict_message(message)
 
     final_prediction = result["prediction"]
-    matched = (
-        final_prediction.lower().replace("&", "and").strip()
-        == expected.lower().replace("&", "and").strip()
+    expected_prediction = (
+        "Non-Toxic" if expected == "Non-Toxic" else "Toxic"
+    ) if MODEL_MODE == "binary" else expected
+
+    # Normalize labels before comparing them
+    normalize = lambda label: (
+        label.lower().replace("&", "and").strip()
     )
 
+    matched = normalize(final_prediction) == normalize(expected_prediction)
     correct += int(matched)
 
-    print("\\n" + "=" * 65)
+    print("\n" + "=" * 75)
+    print(f"TURN {turn} | {speaker}")
     print("Message:", message)
-    print("Expected:", expected)
-    print("-" * 65)
+    print("Expected:", expected_prediction)
+    print("-" * 75)
 
     print(
         "Logistic Regression:",
         result["logistic_regression_prediction"],
-        "-",
+        "| Score:",
         result["logistic_regression_confidence"],
-        "%"
+        result.get("logistic_regression_confidence_type", "uncalibrated score (%)")
     )
 
     print(
         "SVM:",
         result["svm_prediction"],
-        "-",
+        "| Score:",
         result["svm_confidence"],
-        "%"
+        result.get("svm_confidence_type", "uncalibrated score (%)")
     )
 
-    print("-" * 65)
+    print("-" * 75)
     print(
-        "FINAL:",
+        "FINAL PREDICTION:",
         final_prediction,
-        "-",
+        "| Status:",
         result["status"],
-        "-",
+        "| Score:",
         result["confidence"],
-        "%",
-        "| Model:",
+        result.get("confidence_type", "uncalibrated score (%)"),
+        "| Selected model:",
         result["selected_model"]
     )
-    print("Functional test:", "MATCH" if matched else "MISMATCH")
 
-print("\\n" + "=" * 65)
+    print(
+        "Functional test:",
+        "MATCH" if matched else "MISMATCH"
+    )
+
+print("\n" + "=" * 75)
 print(f"Functional matches: {correct}/{total}")
-print("Note: These are manually selected functional examples,")
-print("not a formal evaluation of model accuracy.")
+print(f"Functional match rate: {correct / total * 100:.2f}%")
+
+print("\nIMPORTANT:")
+print("These are manually selected test messages.")
+print("The match rate is NOT the model's test-set accuracy.")
+print("Ambiguous messages may reasonably receive different labels.")

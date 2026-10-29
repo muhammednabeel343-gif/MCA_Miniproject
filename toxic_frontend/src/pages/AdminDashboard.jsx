@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../config";
+import { formatModelScore } from "../utils/modelScore";
 import { authHeaders, getUser } from "../utils/auth";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const currentUser = getUser();
+  const currentUserRole = getUser()?.role;
   // Admin section sub-menus / sidebar
   const [activeTab, setActiveTab] = useState("overview"); // overview, users, flags, moderation, analytics
 
@@ -29,17 +30,8 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (!currentUser || currentUser.role !== "ADMIN") {
-      navigate("/lobby");
-      return;
-    }
-    fetchAdminData();
-  }, [navigate]);
-
   // fetch moderation actions on demand or when moderation tab is active
-  const fetchModeration = async (params = {}) => {
-    setRefreshing(true);
+  const fetchModeration = useCallback(async (params = {}) => {
     try {
       const qs = new URLSearchParams();
       if (params.user_id) qs.set('user_id', params.user_id);
@@ -54,61 +46,9 @@ const AdminDashboard = () => {
     } finally {
       setRefreshing(false);
     }
-  };
+  }, [moderationLimit]);
 
-  useEffect(()=>{
-    if(activeTab === 'moderation') fetchModeration();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab]);
-
-  const fetchAdminData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // 1. Fetch Users
-      const usersRes = await fetch(`${API_BASE_URL}/admin/users`, {
-        headers: authHeaders(),
-      });
-      if (!usersRes.ok) throw new Error("Could not retrieve users list.");
-      const usersData = await usersRes.json();
-      setUsers(usersData);
-
-      // 2. Fetch Flagged toxic chats (default)
-      await fetchFlags();
-
-      // 3. Fetch analytics/dashboard metrics
-      const analyticsRes = await fetch(`${API_BASE_URL}/admin/dashboard`, {
-        headers: authHeaders(),
-      });
-      if (analyticsRes.ok) {
-        const ad = await analyticsRes.json();
-        // normalize backend shape to what frontend expects
-        setAnalytics({
-          total_messages: ad.stats?.total_messages || 0,
-          toxic_messages: ad.stats?.toxic_messages || 0,
-          safe_messages: ad.stats?.safe_messages || 0,
-          total_users: ad.stats?.total_users || 0,
-          active_restrictions: ad.stats?.restricted_users || 0,
-          toxicity_by_class: ad.charts?.categories || {},
-          top_toxic_users: ad.charts?.top_toxic_users || [],
-          timeline: ad.charts?.timeline || [],
-        });
-      }
-      // 4. Fetch recent moderation actions
-      const modRes = await fetch(`${API_BASE_URL}/admin/moderation?limit=20`, {
-        headers: authHeaders(),
-      });
-      if (modRes.ok) {
-        setModerationActions(await modRes.json());
-      }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchFlags = async (params = {}) => {
+  const fetchFlags = useCallback(async (params = {}) => {
     const qs = new URLSearchParams();
     if (params.user_id) qs.set('user_id', params.user_id);
     if (params.game_id) qs.set('game_id', params.game_id);
@@ -127,13 +67,84 @@ const AdminDashboard = () => {
     } catch (err) {
       console.error('Error fetching flags', err);
     }
+  }, [flagsFilterPrediction, flagsStartDate, flagsEndDate, flagsSearch]);
+
+  const fetchAdminData = useCallback(async () => {
+    try {
+      const usersRes = await fetch(`${API_BASE_URL}/admin/users`, {
+        headers: authHeaders(),
+      });
+      if (!usersRes.ok) throw new Error("Could not retrieve users list.");
+      const usersData = await usersRes.json();
+      setError(null);
+      setUsers(usersData);
+
+      await fetchFlags();
+
+      const analyticsRes = await fetch(`${API_BASE_URL}/admin/dashboard`, {
+        headers: authHeaders(),
+      });
+      if (analyticsRes.ok) {
+        const ad = await analyticsRes.json();
+        setAnalytics({
+          total_messages: ad.stats?.total_messages || 0,
+          toxic_messages: ad.stats?.toxic_messages || 0,
+          safe_messages: ad.stats?.safe_messages || 0,
+          total_users: ad.stats?.total_users || 0,
+          active_restrictions: ad.stats?.restricted_users || 0,
+          toxicity_by_class: ad.charts?.categories || {},
+          top_toxic_users: ad.charts?.top_toxic_users || [],
+          timeline: ad.charts?.timeline || [],
+        });
+      }
+
+      const modRes = await fetch(`${API_BASE_URL}/admin/moderation?limit=20`, {
+        headers: authHeaders(),
+      });
+      if (modRes.ok) {
+        setModerationActions(await modRes.json());
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchFlags]);
+
+  const refreshAdminData = () => {
+    setLoading(true);
+    setError(null);
+    return fetchAdminData();
   };
 
+  const refreshModeration = (params = {}) => {
+    setRefreshing(true);
+    return fetchModeration(params);
+  };
+
+  useEffect(() => {
+    if (currentUserRole !== "ADMIN") {
+      navigate("/lobby");
+      return;
+    }
+    Promise.resolve().then(fetchAdminData);
+  }, [navigate, currentUserRole, fetchAdminData]);
+
+  useEffect(() => {
+    if (activeTab === "moderation") {
+      Promise.resolve().then(() => {
+        setRefreshing(true);
+        return fetchModeration();
+      });
+    }
+  }, [activeTab, fetchModeration]);
+
   // refetch flags when filters change and flags tab is active
-  useEffect(()=>{
-    if(activeTab === 'flags') fetchFlags();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, flagsFilterPrediction, flagsStartDate, flagsEndDate]);
+  useEffect(() => {
+    if (activeTab === "flags") {
+      Promise.resolve().then(() => fetchFlags());
+    }
+  }, [activeTab, fetchFlags]);
 
   // User moderation actions triggers
   const handleRestrict = async (userId, payload = null) => {
@@ -169,7 +180,7 @@ const AdminDashboard = () => {
         throw new Error(text || "Failed to restrict user.");
       }
       alert("User restricted successfully.");
-      await fetchAdminData();
+      await refreshAdminData();
       if (selectedUserDetails && selectedUserDetails.user && selectedUserDetails.user.id === userId) {
         await handleViewDetails(userId);
       }
@@ -204,7 +215,7 @@ const AdminDashboard = () => {
         throw new Error(text || "Failed to block user.");
       }
       alert("User blocked successfully.");
-      await fetchAdminData();
+      await refreshAdminData();
       if (selectedUserDetails && selectedUserDetails.user && selectedUserDetails.user.id === userId) {
         await handleViewDetails(userId);
       }
@@ -224,7 +235,7 @@ const AdminDashboard = () => {
         throw new Error(text || "Failed to unblock user.");
       }
       alert("User status restored to ACTIVE.");
-      fetchAdminData();
+      refreshAdminData();
       if (selectedUserDetails && selectedUserDetails.user && selectedUserDetails.user.id === userId) {
         handleViewDetails(userId);
       }
@@ -248,7 +259,7 @@ const AdminDashboard = () => {
         throw new Error(text || "Failed to remove restriction.");
       }
       alert("User restriction removed successfully.");
-      fetchAdminData();
+      refreshAdminData();
       if (selectedUserDetails?.user?.id === userId) handleViewDetails(userId);
     } catch (err) {
       alert(err.message);
@@ -355,7 +366,7 @@ const AdminDashboard = () => {
                         <td style={{ fontWeight: 600 }}>{f.username}</td>
                         <td style={{ fontStyle: "italic", color: "var(--status-toxic)" }}>{f.message}</td>
                         <td><span className="badge badge-toxic">{f.prediction}</span></td>
-                        <td>{f.confidence}/100</td>
+                        <td>{formatModelScore(f)}</td>
                         <td>{f.created_at ? new Date(f.created_at).toLocaleString() : "-"}</td>
                       </tr>
                     ))}
@@ -512,7 +523,7 @@ const AdminDashboard = () => {
               {selectedUserDetails.chat_history.map(c=> (
                 <div key={c.id} style={{borderBottom:'1px solid var(--border)', padding:'6px 0'}}>
                   <div style={{fontStyle:'italic'}}>{c.message}</div>
-                  <div style={{fontSize:12, color:'var(--text)'}}>{c.prediction} — score {c.confidence}/100</div>
+                  <div style={{fontSize:12, color:'var(--text)'}}>{c.prediction} — {formatModelScore(c)}</div>
                 </div>
               ))}
             </div>
@@ -573,7 +584,7 @@ const AdminDashboard = () => {
                       <span className="badge badge-toxic">{f.prediction}</span>
                     </td>
                     <td>
-                      <div style={{fontWeight:600}}>{f.confidence}/100</div>
+                      <div style={{fontWeight:600}}>{formatModelScore(f)}</div>
                       <div style={{fontSize:12, color:'var(--text)'}}>{f.selected_model}</div>
                     </td>
                     <td>
@@ -659,8 +670,8 @@ const AdminDashboard = () => {
               <option value={50}>50</option>
               <option value={100}>100</option>
             </select>
-            <button onClick={()=>fetchModeration({user_id: moderationFilterUser || undefined, limit: moderationLimit})} style={{padding:8}}>Apply</button>
-            <button onClick={()=>fetchModeration()} style={{padding:8}}>Refresh</button>
+            <button onClick={()=>refreshModeration({user_id: moderationFilterUser || undefined, limit: moderationLimit})} style={{padding:8}}>Apply</button>
+            <button onClick={()=>refreshModeration()} style={{padding:8}}>Refresh</button>
           </div>
 
           {refreshing ? (

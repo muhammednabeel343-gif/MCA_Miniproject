@@ -43,8 +43,649 @@
     "artifact": "ml\\artifacts\\grouped_candidates\\grouped_tfidf_vectorizer.joblib"
   },
   "candidate_artifact_directory": "ml\\artifacts\\grouped_candidates",
+  "deployment_bundle": {
+    "artifact": "ml\\gametox_model_bundle.pkl",
+    "selected_svm_candidate": "balanced_C0.5_bigram",
+    "selection_metric": "grouped training-only cross-validation macro recall",
+    "final_fit_rows": 42354,
+    "final_fit_excluded_empty_rows": 605
+  },
   "data_quality_report": "results\\gametox_grouped_data_quality.json",
   "models": {
+    "logistic_regression": {
+      "test": {
+        "accuracy": 0.8738196411709159,
+        "macro_precision": 0.32486558597051696,
+        "macro_recall": 0.2666795957463984,
+        "macro_f1": 0.27438731672533884,
+        "weighted_f1": 0.8501763353532591,
+        "non_toxic_to_toxic_false_positive_count": 136,
+        "non_toxic_to_toxic_false_positive_rate": 0.01986851716581446,
+        "per_class": {
+          "0": {
+            "name": "Non-Toxic",
+            "precision": 0.9038124747406708,
+            "recall": 0.9801314828341855,
+            "f1": 0.940426128399215,
+            "support": 6845
+          },
+          "1": {
+            "name": "Insults & Flaming",
+            "precision": 0.6780341023069207,
+            "recall": 0.5714285714285714,
+            "f1": 0.6201834862385321,
+            "support": 1183
+          },
+          "2": {
+            "name": "Other Offensive Texts",
+            "precision": 0.3673469387755102,
+            "recall": 0.04851752021563342,
+            "f1": 0.08571428571428572,
+            "support": 371
+          },
+          "3": {
+            "name": "Hate & Harassment",
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 56
+          },
+          "4": {
+            "name": "Threats",
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 12
+          },
+          "5": {
+            "name": "Extremism",
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 5
+          }
+        },
+        "confusion_matrix": {
+          "class_ids": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "rows_actual_columns_predicted": [
+            [
+              6709,
+              120,
+              13,
+              0,
+              3,
+              0
+            ],
+            [
+              489,
+              676,
+              18,
+              0,
+              0,
+              0
+            ],
+            [
+              165,
+              188,
+              18,
+              0,
+              0,
+              0
+            ],
+            [
+              48,
+              8,
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              8,
+              4,
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              4,
+              1,
+              0,
+              0,
+              0,
+              0
+            ]
+          ]
+        },
+        "normalized_group_overlap_train_test": 0
+      },
+      "train_class_counts": {
+        "0": 27378,
+        "1": 4734,
+        "2": 1481,
+        "3": 222,
+        "4": 48,
+        "5": 19
+      },
+      "test_class_counts": {
+        "0": 6845,
+        "1": 1183,
+        "2": 371,
+        "3": 56,
+        "4": 12,
+        "5": 5
+      },
+      "test_normalized_group_count": 5331,
+      "train_normalized_group_count": 21337,
+      "grouped_cross_validation_on_training_only": {
+        "method": "3-fold StratifiedGroupKFold grouped by normalized text",
+        "random_state": 42,
+        "folds": [
+          {
+            "fold": 1,
+            "train_rows": 22587,
+            "validation_rows": 11295,
+            "validation_class_counts": {
+              "0": 9126,
+              "1": 1578,
+              "2": 494,
+              "3": 74,
+              "4": 16,
+              "5": 7
+            },
+            "normalized_group_overlap": 0,
+            "metrics": {
+              "accuracy": 0.8709163346613545,
+              "macro_precision": 0.42958631577358397,
+              "macro_recall": 0.27456436560087855,
+              "macro_f1": 0.29887563973859815,
+              "weighted_f1": 0.8460365111550938,
+              "non_toxic_to_toxic_false_positive_count": 154,
+              "non_toxic_to_toxic_false_positive_rate": 0.01687486302870918,
+              "per_class": {
+                "0": {
+                  "name": "Non-Toxic",
+                  "precision": 0.8884047925537182,
+                  "recall": 0.9831251369712908,
+                  "f1": 0.9333680104031209,
+                  "support": 9126
+                },
+                "1": {
+                  "name": "Insults & Flaming",
+                  "precision": 0.7459312839059674,
+                  "recall": 0.5228136882129277,
+                  "f1": 0.6147540983606558,
+                  "support": 1578
+                },
+                "2": {
+                  "name": "Other Offensive Texts",
+                  "precision": 0.4431818181818182,
+                  "recall": 0.07894736842105263,
+                  "f1": 0.13402061855670103,
+                  "support": 494
+                },
+                "3": {
+                  "name": "Hate & Harassment",
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "f1": 0.0,
+                  "support": 74
+                },
+                "4": {
+                  "name": "Threats",
+                  "precision": 0.5,
+                  "recall": 0.0625,
+                  "f1": 0.1111111111111111,
+                  "support": 16
+                },
+                "5": {
+                  "name": "Extremism",
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "f1": 0.0,
+                  "support": 7
+                }
+              },
+              "confusion_matrix": {
+                "class_ids": [
+                  0,
+                  1,
+                  2,
+                  3,
+                  4,
+                  5
+                ],
+                "rows_actual_columns_predicted": [
+                  [
+                    8972,
+                    137,
+                    16,
+                    0,
+                    1,
+                    0
+                  ],
+                  [
+                    723,
+                    825,
+                    30,
+                    0,
+                    0,
+                    0
+                  ],
+                  [
+                    332,
+                    123,
+                    39,
+                    0,
+                    0,
+                    0
+                  ],
+                  [
+                    53,
+                    18,
+                    3,
+                    0,
+                    0,
+                    0
+                  ],
+                  [
+                    12,
+                    3,
+                    0,
+                    0,
+                    1,
+                    0
+                  ],
+                  [
+                    7,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0
+                  ]
+                ]
+              }
+            }
+          },
+          {
+            "fold": 2,
+            "train_rows": 22589,
+            "validation_rows": 11293,
+            "validation_class_counts": {
+              "0": 9126,
+              "1": 1578,
+              "2": 493,
+              "3": 74,
+              "4": 16,
+              "5": 6
+            },
+            "normalized_group_overlap": 0,
+            "metrics": {
+              "accuracy": 0.8711591251217569,
+              "macro_precision": 0.496356182860166,
+              "macro_recall": 0.27545627123806277,
+              "macro_f1": 0.29886887828923125,
+              "weighted_f1": 0.847184300197665,
+              "non_toxic_to_toxic_false_positive_count": 176,
+              "non_toxic_to_toxic_false_positive_rate": 0.01928555774709621,
+              "per_class": {
+                "0": {
+                  "name": "Non-Toxic",
+                  "precision": 0.8905472636815921,
+                  "recall": 0.9807144422529038,
+                  "f1": 0.9334584897788902,
+                  "support": 9126
+                },
+                "1": {
+                  "name": "Insults & Flaming",
+                  "precision": 0.747589833479404,
+                  "recall": 0.5405576679340938,
+                  "f1": 0.6274365575579257,
+                  "support": 1578
+                },
+                "2": {
+                  "name": "Other Offensive Texts",
+                  "precision": 0.34,
+                  "recall": 0.06896551724137931,
+                  "f1": 0.11467116357504216,
+                  "support": 493
+                },
+                "3": {
+                  "name": "Hate & Harassment",
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "f1": 0.0,
+                  "support": 74
+                },
+                "4": {
+                  "name": "Threats",
+                  "precision": 1.0,
+                  "recall": 0.0625,
+                  "f1": 0.11764705882352941,
+                  "support": 16
+                },
+                "5": {
+                  "name": "Extremism",
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "f1": 0.0,
+                  "support": 6
+                }
+              },
+              "confusion_matrix": {
+                "class_ids": [
+                  0,
+                  1,
+                  2,
+                  3,
+                  4,
+                  5
+                ],
+                "rows_actual_columns_predicted": [
+                  [
+                    8950,
+                    131,
+                    45,
+                    0,
+                    0,
+                    0
+                  ],
+                  [
+                    704,
+                    853,
+                    20,
+                    1,
+                    0,
+                    0
+                  ],
+                  [
+                    321,
+                    138,
+                    34,
+                    0,
+                    0,
+                    0
+                  ],
+                  [
+                    57,
+                    16,
+                    1,
+                    0,
+                    0,
+                    0
+                  ],
+                  [
+                    14,
+                    1,
+                    0,
+                    0,
+                    1,
+                    0
+                  ],
+                  [
+                    4,
+                    2,
+                    0,
+                    0,
+                    0,
+                    0
+                  ]
+                ]
+              }
+            }
+          },
+          {
+            "fold": 3,
+            "train_rows": 22588,
+            "validation_rows": 11294,
+            "validation_class_counts": {
+              "0": 9126,
+              "1": 1578,
+              "2": 494,
+              "3": 74,
+              "4": 16,
+              "5": 6
+            },
+            "normalized_group_overlap": 0,
+            "metrics": {
+              "accuracy": 0.8738268106959447,
+              "macro_precision": 0.39258332295624515,
+              "macro_recall": 0.2757210169296844,
+              "macro_f1": 0.29396971105692443,
+              "weighted_f1": 0.848301355109724,
+              "non_toxic_to_toxic_false_positive_count": 171,
+              "non_toxic_to_toxic_false_positive_rate": 0.01873767258382643,
+              "per_class": {
+                "0": {
+                  "name": "Non-Toxic",
+                  "precision": 0.8899821109123435,
+                  "recall": 0.9812623274161736,
+                  "f1": 0.9333958724202627,
+                  "support": 9126
+                },
+                "1": {
+                  "name": "Insults & Flaming",
+                  "precision": 0.7555178268251274,
+                  "recall": 0.5640050697084917,
+                  "f1": 0.6458635703918723,
+                  "support": 1578
+                },
+                "2": {
+                  "name": "Other Offensive Texts",
+                  "precision": 0.46,
+                  "recall": 0.0465587044534413,
+                  "f1": 0.08455882352941177,
+                  "support": 494
+                },
+                "3": {
+                  "name": "Hate & Harassment",
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "f1": 0.0,
+                  "support": 74
+                },
+                "4": {
+                  "name": "Threats",
+                  "precision": 0.25,
+                  "recall": 0.0625,
+                  "f1": 0.1,
+                  "support": 16
+                },
+                "5": {
+                  "name": "Extremism",
+                  "precision": 0.0,
+                  "recall": 0.0,
+                  "f1": 0.0,
+                  "support": 6
+                }
+              },
+              "confusion_matrix": {
+                "class_ids": [
+                  0,
+                  1,
+                  2,
+                  3,
+                  4,
+                  5
+                ],
+                "rows_actual_columns_predicted": [
+                  [
+                    8955,
+                    161,
+                    7,
+                    0,
+                    3,
+                    0
+                  ],
+                  [
+                    671,
+                    890,
+                    17,
+                    0,
+                    0,
+                    0
+                  ],
+                  [
+                    360,
+                    111,
+                    23,
+                    0,
+                    0,
+                    0
+                  ],
+                  [
+                    58,
+                    13,
+                    3,
+                    0,
+                    0,
+                    0
+                  ],
+                  [
+                    13,
+                    2,
+                    0,
+                    0,
+                    1,
+                    0
+                  ],
+                  [
+                    5,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0
+                  ]
+                ]
+              }
+            }
+          }
+        ],
+        "out_of_fold_metrics": {
+          "accuracy": 0.8719674163272534,
+          "macro_precision": 0.4118927733880491,
+          "macro_recall": 0.27524675183533653,
+          "macro_f1": 0.29728001387977554,
+          "weighted_f1": 0.8472192416098518,
+          "non_toxic_to_toxic_false_positive_count": 501,
+          "non_toxic_to_toxic_false_positive_rate": 0.018299364453210606,
+          "per_class": {
+            "0": {
+              "name": "Non-Toxic",
+              "precision": 0.8896428453212406,
+              "recall": 0.9817006355467894,
+              "f1": 0.9334074215561999,
+              "support": 27378
+            },
+            "1": {
+              "name": "Insults & Flaming",
+              "precision": 0.7497810218978103,
+              "recall": 0.5424588086185045,
+              "f1": 0.6294889079544062,
+              "support": 4734
+            },
+            "2": {
+              "name": "Other Offensive Texts",
+              "precision": 0.40336134453781514,
+              "recall": 0.06482106684672519,
+              "f1": 0.11169284467713787,
+              "support": 1481
+            },
+            "3": {
+              "name": "Hate & Harassment",
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 222
+            },
+            "4": {
+              "name": "Threats",
+              "precision": 0.42857142857142855,
+              "recall": 0.0625,
+              "f1": 0.10909090909090909,
+              "support": 48
+            },
+            "5": {
+              "name": "Extremism",
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 19
+            }
+          },
+          "confusion_matrix": {
+            "class_ids": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "rows_actual_columns_predicted": [
+              [
+                26877,
+                429,
+                68,
+                0,
+                4,
+                0
+              ],
+              [
+                2098,
+                2568,
+                67,
+                1,
+                0,
+                0
+              ],
+              [
+                1013,
+                372,
+                96,
+                0,
+                0,
+                0
+              ],
+              [
+                168,
+                47,
+                7,
+                0,
+                0,
+                0
+              ],
+              [
+                39,
+                6,
+                0,
+                0,
+                3,
+                0
+              ],
+              [
+                16,
+                3,
+                0,
+                0,
+                0,
+                0
+              ]
+            ]
+          }
+        }
+      }
+    },
     "unweighted_bigram": {
       "test": {
         "accuracy": 0.8683899905571294,
